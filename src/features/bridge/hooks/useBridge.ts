@@ -21,7 +21,7 @@ import { useAttestation } from "./useAttestation";
 export function useBridge() {
   const { address, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
+  const config = useConfig();
   const { switchChainAsync } = useSwitchChain();
 
   const [bridgeTx, setBridgeTx] = useState<BridgeTransaction | null>(null);
