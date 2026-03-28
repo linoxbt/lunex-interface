@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from "wagmi";
+import { useAccount, useWalletClient, usePublicClient, useSwitchChain, useConfig } from "wagmi";
+import { getPublicClient } from "wagmi/actions";
 import { parseUnits, keccak256, decodeEventLog } from "viem";
 import {
   BRIDGE_CHAINS,
