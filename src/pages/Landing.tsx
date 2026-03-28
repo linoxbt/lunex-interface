@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, DollarSign, Droplets, Shield } from "lucide-react";
+import { ArrowRight, DollarSign, Droplets, Shield, BarChart3 } from "lucide-react";
 import FaucetBanner from "@/components/FaucetBanner";
 import { usePoolData } from "@/hooks/usePoolData";
 import { useVaultData } from "@/hooks/useVaultData";
+import { useProtocolVolume } from "@/hooks/useProtocolVolume";
 
 const Landing = () => {
   const pool = usePoolData();
   const usdcVault = useVaultData("USDC");
   const eurcVault = useVaultData("EURC");
+  const volume = useProtocolVolume();
   const totalTvl = pool.totalLiquidity + usdcVault.totalAssets + eurcVault.totalAssets;
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
