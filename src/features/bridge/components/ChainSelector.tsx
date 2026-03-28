@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
+import { ChainIcon } from "@/components/ChainIcon";
 
 interface ChainSelectorProps {
   fromChain: BridgeChainKey;
