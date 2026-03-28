@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useAccount, useWalletClient, usePublicClient, useSwitchChain, useConfig } from "wagmi";
+import { useAccount, useWalletClient, useSwitchChain, useConfig } from "wagmi";
 import { getPublicClient } from "wagmi/actions";
 import { parseUnits, keccak256, decodeEventLog } from "viem";
 import {
@@ -50,9 +50,16 @@ export function useBridge() {
     [chainId, switchChainAsync]
   );
 
+  const getClient = useCallback(
+    (targetChainId: number) => {
+      return getPublicClient(config, { chainId: targetChainId });
+    },
+    [config]
+  );
+
   const startBridge = useCallback(
     async (amount: string, fromChain: BridgeChainKey, toChain: BridgeChainKey) => {
-      if (!address || !walletClient || !publicClient) {
+      if (!address || !walletClient) {
         setError("Wallet not connected");
         return;
       }
@@ -80,6 +87,12 @@ export function useBridge() {
         // Ensure correct chain
         await ensureChain(from.chainId);
 
+        // Get chain-specific public client AFTER chain switch
+        const sourceClient = getClient(from.chainId);
+        if (!sourceClient) {
+          throw new Error(`No public client available for chain ${from.chainId}`);
+        }
+
         // Step 1: Approve USDC
         setStatus("approving");
         updateTx({ status: "approving" });
@@ -92,7 +105,7 @@ export function useBridge() {
           chain: walletClient.chain,
           account: address,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await sourceClient.waitForTransactionReceipt({ hash: approveHash });
 
         // Step 2: Burn via depositForBurn
         setStatus("burning");
@@ -108,7 +121,7 @@ export function useBridge() {
           account: address,
         });
 
-        const burnReceipt = await publicClient.waitForTransactionReceipt({ hash: burnHash });
+        const burnReceipt = await sourceClient.waitForTransactionReceipt({ hash: burnHash });
 
         // Extract MessageSent event
         let messageBytes: `0x${string}` | undefined;
@@ -128,7 +141,39 @@ export function useBridge() {
           }
         }
 
+        // Fallback: if decodeEventLog didn't match, try to find the MessageSent
+        // event by its topic signature and extract the raw data
         if (!messageBytes) {
+          const MESSAGE_SENT_TOPIC = keccak256(
+            new TextEncoder().encode("MessageSent(bytes)") as unknown as Uint8Array
+          );
+          for (const log of burnReceipt.logs) {
+            const topics = (log as any).topics ?? [];
+            if (topics[0]?.toLowerCase() === MESSAGE_SENT_TOPIC.toLowerCase()) {
+              // The message is ABI-encoded as bytes in log.data
+              // bytes is encoded as: offset (32 bytes) + length (32 bytes) + data
+              const data = log.data as `0x${string}`;
+              if (data && data.length > 2) {
+                try {
+                  // Skip the offset (first 32 bytes = 64 hex chars) and length (next 32 bytes)
+                  const offsetHex = data.slice(2, 66);
+                  const offset = parseInt(offsetHex, 16) * 2; // convert to hex char offset
+                  const lengthHex = data.slice(2 + offset, 2 + offset + 64);
+                  const length = parseInt(lengthHex, 16) * 2; // bytes to hex chars
+                  const messageHex = data.slice(2 + offset + 64, 2 + offset + 64 + length);
+                  messageBytes = `0x${messageHex}` as `0x${string}`;
+                } catch {
+                  // manual parsing failed
+                }
+              }
+              break;
+            }
+          }
+        }
+
+        if (!messageBytes) {
+          // Log details for debugging
+          console.error("Burn receipt logs:", JSON.stringify(burnReceipt.logs, null, 2));
           throw new Error("Failed to extract message from burn transaction");
         }
 
@@ -148,11 +193,11 @@ export function useBridge() {
         updateTx({ status: "failed", error: msg });
       }
     },
-    [address, walletClient, publicClient, ensureChain, updateTx]
+    [address, walletClient, ensureChain, updateTx, getClient]
   );
 
   const completeMint = useCallback(async () => {
-    if (!bridgeTx || !walletClient || !publicClient || !attestation.attestation || !bridgeTx.messageBytes) {
+    if (!bridgeTx || !walletClient || !attestation.attestation || !bridgeTx.messageBytes) {
       return;
     }
 
@@ -160,6 +205,11 @@ export function useBridge() {
 
     try {
       await ensureChain(to.chainId);
+
+      const destClient = getClient(to.chainId);
+      if (!destClient) {
+        throw new Error(`No public client available for chain ${to.chainId}`);
+      }
 
       setStatus("minting");
       updateTx({ status: "minting" });
@@ -173,7 +223,7 @@ export function useBridge() {
         account: address!,
       });
 
-      await publicClient.waitForTransactionReceipt({ hash: mintHash });
+      await destClient.waitForTransactionReceipt({ hash: mintHash });
 
       setStatus("complete");
       updateTx({ status: "complete", mintTxHash: mintHash, attestation: attestation.attestation });
@@ -183,7 +233,7 @@ export function useBridge() {
       setError(msg);
       updateTx({ status: "failed", error: msg });
     }
-  }, [bridgeTx, walletClient, publicClient, attestation.attestation, ensureChain, updateTx]);
+  }, [bridgeTx, walletClient, attestation.attestation, ensureChain, updateTx, getClient, address]);
 
   const reset = useCallback(() => {
     setBridgeTx(null);
