@@ -1,11 +1,18 @@
-import { DollarSign, Droplets, Shield } from "lucide-react";
+import { DollarSign, Droplets, Shield, BarChart3 } from "lucide-react";
 import { usePoolData } from "@/hooks/usePoolData";
 import { useVaultData } from "@/hooks/useVaultData";
+import { useProtocolVolume } from "@/hooks/useProtocolVolume";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const ProtocolStats = () => {
   const pool = usePoolData();
   const usdcVault = useVaultData("USDC");
   const eurcVault = useVaultData("EURC");
+  const volume = useProtocolVolume();
   const totalTvl = pool.totalLiquidity + usdcVault.totalAssets + eurcVault.totalAssets;
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -14,8 +21,24 @@ const ProtocolStats = () => {
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">Protocol Stats</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">Lunex Finance | Live Onchain Data</p>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-border mb-6">
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><DollarSign className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">TOTAL TVL</p><p className="text-xl font-bold font-mono">${fmt(totalTvl)}</p></div>
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <div className="p-5 bg-card cursor-pointer hover:bg-accent/5 transition-colors">
+              <div className="h-8 w-8 bg-accent/10 flex items-center justify-center mb-3"><BarChart3 className="h-4 w-4 text-accent-foreground" /></div>
+              <p className="text-xs text-muted-foreground tracking-wider">TOTAL VOLUME</p>
+              <p className="text-xl font-bold font-mono">${fmt(volume.totalVolume)}</p>
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-56">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Swap</span><span className="font-mono">${fmt(volume.swapVolume)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Pool</span><span className="font-mono">${fmt(volume.poolVolume)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Vault</span><span className="font-mono">${fmt(volume.vaultVolume)}</span></div>
+            </div>
+          </HoverCardContent>
+        </HoverCard>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><Droplets className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">POOL LIQUIDITY</p><p className="text-xl font-bold font-mono">${fmt(pool.totalLiquidity)}</p></div>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><Shield className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">USDC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(usdcVault.totalAssets)}</p></div>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-secondary/10 flex items-center justify-center mb-3"><Shield className="h-4 w-4 text-secondary" /></div><p className="text-xs text-muted-foreground tracking-wider">EURC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(eurcVault.totalAssets)}</p></div>

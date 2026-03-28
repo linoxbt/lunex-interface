@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
+import { ChainIcon } from "@/components/ChainIcon";
 
 interface ChainSelectorProps {
   fromChain: BridgeChainKey;
@@ -38,12 +39,18 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <SelectValue />
+            <SelectValue>
+              <span className="inline-flex items-center gap-2">
+                <ChainIcon chain={fromChain} /> {BRIDGE_CHAINS[fromChain].label}
+              </span>
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== toChain).map((k) => (
               <SelectItem key={k} value={k}>
-                {BRIDGE_CHAINS[k].label}
+                <span className="inline-flex items-center gap-2">
+                  <ChainIcon chain={k} /> {BRIDGE_CHAINS[k].label}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -70,12 +77,18 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <SelectValue />
+            <SelectValue>
+              <span className="inline-flex items-center gap-2">
+                <ChainIcon chain={toChain} /> {BRIDGE_CHAINS[toChain].label}
+              </span>
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== fromChain).map((k) => (
               <SelectItem key={k} value={k}>
-                {BRIDGE_CHAINS[k].label}
+                <span className="inline-flex items-center gap-2">
+                  <ChainIcon chain={k} /> {BRIDGE_CHAINS[k].label}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
