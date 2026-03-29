@@ -47,7 +47,7 @@ const TOKENS = [
 // Function selectors
 const BALANCES_SELECTOR = "0x4903b0d1"; // balances(uint256)
 const FEE_SELECTOR = "0xddca3f43"; // fee()
-const LP_TOKEN_SELECTOR = "0x82c630de"; // lpToken()
+const LP_TOKEN_SELECTOR = "0x5fcbd285"; // lpToken()
 const TOTAL_SUPPLY_SELECTOR = "0x18160ddd"; // totalSupply()
 
 function encodeBigInt(val: bigint): string { return val.toString(16).padStart(64, "0"); }
