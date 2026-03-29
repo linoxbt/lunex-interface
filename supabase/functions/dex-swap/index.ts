@@ -1,17 +1,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // ─── Lunex Finance DEX Adapter — Swap Endpoint ───
-// POST /swap
-// Body: { walletAddress, tokenIn, tokenOut, amountIn, slippage? }
-//
-// Returns unsigned transaction data that the aggregator can forward to the user's wallet.
+// POST /dex-swap  { walletAddress, tokenIn, tokenOut, amountIn, slippage? }
+// Requires header: x-api-key
+// Rate limited: 30 requests/minute per API key
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-client-info, apikey",
   "Content-Type": "application/json",
 };
+
+// ─── Rate Limiting ───
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000;
+
+function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  let entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + RATE_WINDOW_MS };
+    rateLimitMap.set(key, entry);
+  }
+  entry.count++;
+  return { allowed: entry.count <= RATE_LIMIT, remaining: Math.max(0, RATE_LIMIT - entry.count), resetAt: entry.resetAt };
+}
+
+// ─── API Key Auth ───
+function validateApiKey(req: Request): { valid: boolean; key: string } {
+  const apiKey = req.headers.get("x-api-key") || "";
+  const validKeys = (Deno.env.get("DEX_API_KEYS") || "").split(",").map(k => k.trim()).filter(Boolean);
+  if (validKeys.length === 0) return { valid: true, key: "anonymous" };
+  return { valid: validKeys.includes(apiKey), key: apiKey };
+}
 
 const RPC_URL = "https://rpc.testnet.arc.network";
 const POOL_ADDRESS = "0xC24BFc8e4b10500a72A63Bec98CCC989CbDA41d8";
@@ -22,10 +45,7 @@ const SUPPORTED_TOKENS: Record<string, { symbol: string; decimals: number; index
   "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6, index: 1n },
 };
 
-// ─── ABI encoding helpers ───
-function encodeBigInt(val: bigint): string {
-  return val.toString(16).padStart(64, "0");
-}
+function encodeBigInt(val: bigint): string { return val.toString(16).padStart(64, "0"); }
 
 function encodeFunctionCall(selector: string, params: bigint[]): string {
   let data = selector;
@@ -34,49 +54,26 @@ function encodeFunctionCall(selector: string, params: bigint[]): string {
 }
 
 function decodeBigInt(hex: string): bigint {
-  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-  return BigInt("0x" + clean);
+  return BigInt("0x" + (hex.startsWith("0x") ? hex.slice(2) : hex));
 }
-
-// Function selectors
-const GET_DY_SELECTOR = "0x556d6e9f"; // get_dy(uint256,uint256,uint256)
-const EXCHANGE_SELECTOR = "0x5b41b908"; // exchange(uint256,uint256,uint256,uint256)
-const APPROVE_SELECTOR = "0x095ea7b3"; // approve(address,uint256)
 
 function encodeAddress(addr: string): string {
   return addr.toLowerCase().replace("0x", "").padStart(64, "0");
 }
 
+const GET_DY_SELECTOR = "0x556d6e9f";
+const EXCHANGE_SELECTOR = "0x5b41b908";
+const APPROVE_SELECTOR = "0x095ea7b3";
+
 async function ethCall(to: string, data: string): Promise<string> {
   const res = await fetch(RPC_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "eth_call",
-      params: [{ to, data }, "latest"],
-    }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
   });
   const json = await res.json();
   if (json.error) throw new Error(json.error.message || "RPC error");
   return json.result;
-}
-
-interface SwapRequest {
-  walletAddress: string;
-  tokenIn: string;
-  tokenOut: string;
-  amountIn: string;
-  slippage?: number;
-}
-
-interface TransactionData {
-  to: string;
-  data: string;
-  value: string;
-  chainId: number;
-  gasLimit: string;
 }
 
 serve(async (req) => {
@@ -84,41 +81,47 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed. Use POST." }), {
-      status: 405,
-      headers: CORS_HEADERS,
+  const auth = validateApiKey(req);
+  if (!auth.valid) {
+    return new Response(JSON.stringify({ error: "Invalid or missing API key", hint: "Set x-api-key header" }), {
+      status: 401, headers: CORS_HEADERS,
     });
   }
 
+  const rl = checkRateLimit(auth.key);
+  const rlHeaders = {
+    ...CORS_HEADERS,
+    "X-RateLimit-Limit": String(RATE_LIMIT),
+    "X-RateLimit-Remaining": String(rl.remaining),
+    "X-RateLimit-Reset": String(Math.ceil(rl.resetAt / 1000)),
+  };
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), {
+      status: 429, headers: rlHeaders,
+    });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed. Use POST." }), { status: 405, headers: rlHeaders });
+  }
+
   try {
-    const body: SwapRequest = await req.json();
+    const body = await req.json();
     const { walletAddress, tokenIn, tokenOut, amountIn, slippage = 0.5 } = body;
 
-    // ─── Validation ───
     if (!walletAddress || !tokenIn || !tokenOut || !amountIn) {
       return new Response(
         JSON.stringify({
           error: "Missing required fields",
           required: ["walletAddress", "tokenIn", "tokenOut", "amountIn"],
           optional: ["slippage (default: 0.5)"],
-          example: {
-            walletAddress: "0xYourWallet",
-            tokenIn: "0x3600000000000000000000000000000000000000",
-            tokenOut: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
-            amountIn: "1000000",
-            slippage: 0.5,
-          },
         }),
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: rlHeaders }
       );
     }
 
     if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid walletAddress format" }),
-        { status: 400, headers: CORS_HEADERS }
-      );
+      return new Response(JSON.stringify({ error: "Invalid walletAddress format" }), { status: 400, headers: rlHeaders });
     }
 
     const inToken = SUPPORTED_TOKENS[tokenIn.toLowerCase()];
@@ -128,101 +131,55 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: "Unsupported token",
-          supportedTokens: Object.entries(SUPPORTED_TOKENS).map(([addr, t]) => ({
-            address: addr,
-            symbol: t.symbol,
-          })),
+          supportedTokens: Object.entries(SUPPORTED_TOKENS).map(([addr, t]) => ({ address: addr, symbol: t.symbol })),
         }),
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: rlHeaders }
       );
     }
 
     if (inToken.index === outToken.index) {
-      return new Response(
-        JSON.stringify({ error: "tokenIn and tokenOut must be different" }),
-        { status: 400, headers: CORS_HEADERS }
-      );
+      return new Response(JSON.stringify({ error: "tokenIn and tokenOut must be different" }), { status: 400, headers: rlHeaders });
     }
 
     const amountInBigInt = BigInt(amountIn);
     if (amountInBigInt <= 0n) {
-      return new Response(
-        JSON.stringify({ error: "amountIn must be positive" }),
-        { status: 400, headers: CORS_HEADERS }
-      );
+      return new Response(JSON.stringify({ error: "amountIn must be positive" }), { status: 400, headers: rlHeaders });
     }
 
-    // ─── Get expected output ───
     const dyData = encodeFunctionCall(GET_DY_SELECTOR, [inToken.index, outToken.index, amountInBigInt]);
     const dyResult = await ethCall(POOL_ADDRESS, dyData);
     const expectedOut = decodeBigInt(dyResult);
 
     if (expectedOut === 0n) {
-      return new Response(
-        JSON.stringify({ error: "Insufficient liquidity for this trade" }),
-        { status: 422, headers: CORS_HEADERS }
-      );
+      return new Response(JSON.stringify({ error: "Insufficient liquidity for this trade" }), { status: 422, headers: rlHeaders });
     }
 
-    // ─── Calculate minDy with slippage ───
     const slippageBps = BigInt(Math.floor((1 - slippage / 100) * 10000));
     const minDy = (expectedOut * slippageBps) / 10000n;
 
-    // ─── Build approval tx ───
     const maxApproval = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     const approveData = APPROVE_SELECTOR + encodeAddress(POOL_ADDRESS) + encodeBigInt(maxApproval);
 
-    const approveTx: TransactionData = {
-      to: tokenIn,
-      data: approveData,
-      value: "0x0",
-      chainId: CHAIN_ID,
-      gasLimit: "60000",
-    };
-
-    // ─── Build swap tx ───
-    const swapData = encodeFunctionCall(EXCHANGE_SELECTOR, [
-      inToken.index,
-      outToken.index,
-      amountInBigInt,
-      minDy,
-    ]);
-
-    const swapTx: TransactionData = {
-      to: POOL_ADDRESS,
-      data: swapData,
-      value: "0x0",
-      chainId: CHAIN_ID,
-      gasLimit: "250000",
-    };
+    const swapData = encodeFunctionCall(EXCHANGE_SELECTOR, [inToken.index, outToken.index, amountInBigInt, minDy]);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          approveTransaction: approveTx,
-          swapTransaction: swapTx,
+          approveTransaction: { to: tokenIn, data: approveData, value: "0x0", chainId: CHAIN_ID, gasLimit: "60000" },
+          swapTransaction: { to: POOL_ADDRESS, data: swapData, value: "0x0", chainId: CHAIN_ID, gasLimit: "250000" },
           expectedOutput: expectedOut.toString(),
           minimumOutput: minDy.toString(),
           slippagePercent: slippage,
           tokenIn: { address: tokenIn, symbol: inToken.symbol, decimals: inToken.decimals },
           tokenOut: { address: tokenOut, symbol: outToken.symbol, decimals: outToken.decimals },
         },
-        meta: {
-          protocol: "Lunex Finance",
-          chainId: CHAIN_ID,
-          chainName: "Arc Testnet",
-          pool: POOL_ADDRESS,
-          timestamp: new Date().toISOString(),
-        },
+        meta: { protocol: "Lunex Finance", chainId: CHAIN_ID, chainName: "Arc Testnet", pool: POOL_ADDRESS, timestamp: new Date().toISOString() },
       }),
-      { status: 200, headers: CORS_HEADERS }
+      { status: 200, headers: rlHeaders }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ success: false, error: message }),
-      { status: 500, headers: CORS_HEADERS }
-    );
+    return new Response(JSON.stringify({ success: false, error: message }), { status: 500, headers: rlHeaders });
   }
 });
