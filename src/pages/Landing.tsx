@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, DollarSign, Droplets, Shield } from "lucide-react";
+import { ArrowRight, DollarSign, Droplets, Shield, BarChart3 } from "lucide-react";
 import FaucetBanner from "@/components/FaucetBanner";
 import { usePoolData } from "@/hooks/usePoolData";
 import { useVaultData } from "@/hooks/useVaultData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Landing = () => {
   const pool = usePoolData();
@@ -10,6 +12,17 @@ const Landing = () => {
   const eurcVault = useVaultData("EURC");
   const totalTvl = pool.totalLiquidity + usdcVault.totalAssets + eurcVault.totalAssets;
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const { data: stats } = useQuery({
+    queryKey: ["protocol-stats"],
+    queryFn: async () => {
+      const { data } = await supabase.from("protocol_stats").select("*").eq("id", 1).single();
+      return data;
+    },
+    refetchInterval: 10000,
+  });
+
+  const totalVolume = stats?.total_volume_usd ?? 0;
 
   return (
     <div className="page-fade-in">
@@ -51,8 +64,9 @@ const Landing = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border">
           <div className="flex items-center gap-4 bg-background p-6 justify-center md:justify-start"><div className="flex h-10 w-10 items-center justify-center bg-primary/10"><DollarSign className="h-5 w-5 text-primary" /></div><div className="text-center md:text-left"><p className="text-xs text-muted-foreground tracking-wider">TOTAL TVL</p><p className="text-xl font-bold font-mono">${fmt(totalTvl)}</p></div></div>
+          <div className="flex items-center gap-4 bg-background p-6 justify-center md:justify-start"><div className="flex h-10 w-10 items-center justify-center bg-primary/10"><BarChart3 className="h-5 w-5 text-primary" /></div><div className="text-center md:text-left"><p className="text-xs text-muted-foreground tracking-wider">TOTAL VOLUME</p><p className="text-xl font-bold font-mono">${fmt(totalVolume)}</p></div></div>
           <div className="flex items-center gap-4 bg-background p-6 justify-center md:justify-start"><div className="flex h-10 w-10 items-center justify-center bg-primary/10"><Droplets className="h-5 w-5 text-primary" /></div><div className="text-center md:text-left"><p className="text-xs text-muted-foreground tracking-wider">POOL RESERVES</p><p className="text-xl font-bold font-mono">${fmt(pool.totalLiquidity)}</p></div></div>
           <div className="flex items-center gap-4 bg-background p-6 justify-center md:justify-start"><div className="flex h-10 w-10 items-center justify-center bg-primary/10"><Shield className="h-5 w-5 text-primary" /></div><div className="text-center md:text-left"><p className="text-xs text-muted-foreground tracking-wider">USDC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(usdcVault.totalAssets)}</p></div></div>
           <div className="flex items-center gap-4 bg-background p-6 justify-center md:justify-start"><div className="flex h-10 w-10 items-center justify-center bg-secondary/10"><Shield className="h-5 w-5 text-secondary" /></div><div className="text-center md:text-left"><p className="text-xs text-muted-foreground tracking-wider">EURC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(eurcVault.totalAssets)}</p></div></div>
