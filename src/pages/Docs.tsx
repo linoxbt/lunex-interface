@@ -1,367 +1,628 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { Search, BookOpen, ChevronRight, ExternalLink } from "lucide-react";
 
 interface DocSection {
+  id: string;
   title: string;
   content: string;
 }
 
 interface DocCategory {
+  id: string;
   category: string;
+  icon: string;
   sections: DocSection[];
 }
 
 const docs: DocCategory[] = [
   {
-    category: "Overview",
+    id: "overview",
+    category: "Getting Started",
+    icon: "🚀",
     sections: [
       {
-        title: "What is Lunex Finance",
-        content: `Lunex Finance is a decentralised exchange (DEX) protocol built on Arc Network. It combines a Curve-style StableSwap Automated Market Maker (AMM) optimised for stablecoin pairs with ERC-4626 yield vaults, providing users with efficient swapping and passive yield generation.
+        id: "what-is-lunex",
+        title: "What is Lunex",
+        content: `Lunex is a decentralised exchange (DEX) protocol built on Arc Network. It combines a Curve-style StableSwap AMM optimised for stablecoin pairs with ERC-4626 yield vaults.
 
-Key features:
-• Near-zero slippage swaps between USDC and EURC
-• ERC-4626 compliant yield vaults with auto-compounding
-• On-chain transparency: all operations are verifiable on the Arc Testnet explorer
-• Cross-chain bridging via Squid Router and thirdweb Pay
+Key capabilities:
+  Near-zero slippage swaps between USDC and EURC
+  ERC-4626 compliant yield vaults with auto-compounding
+  On-chain transparency on Arc Testnet explorer
+  Cross-chain bridging via Circle CCTP
+  RESTful DEX adapter (Lunex SDK) for aggregator integrations
 
-Lunex Finance is currently live on Arc Network Testnet (Chain ID: 5042002).`,
+Currently live on Arc Network Testnet (Chain ID: 5042002).`,
       },
       {
-        title: "Getting Started",
-        content: `1. Install MetaMask or any compatible Web3 wallet (Rabby, Coinbase Wallet, etc.)
+        id: "quickstart",
+        title: "Quick Start Guide",
+        content: `1. Install a Web3 wallet (MetaMask, Rabby, Coinbase Wallet)
 
-2. Add Arc Network Testnet to your wallet:
-   • Network Name: Arc Testnet
-   • Chain ID: 5042002
-   • RPC URL: https://rpc.testnet.arc.network
-   • Block Explorer: https://testnet.arcscan.app
-   • Native Currency: USDC
+2. Add Arc Network Testnet:
+   Network Name: Arc Testnet
+   Chain ID: 5042002
+   RPC URL: https://rpc.testnet.arc.network
+   Block Explorer: https://testnet.arcscan.app
+   Native Currency: USDC
 
 3. Get testnet tokens from faucet.circle.com
 
-4. Visit Lunex Finance and click "Connect" in the top navigation bar
+4. Visit the app and click "Connect" in the navbar
 
-5. Start using Swap, Pool, Yield, or Bridge features`,
+5. Start using Swap, Pool, Yield, Bridge, or Stats features`,
       },
     ],
   },
   {
+    id: "swap",
     category: "Swap",
+    icon: "🔄",
     sections: [
       {
+        id: "how-swap-works",
         title: "How Swapping Works",
-        content: `The Swap feature lets you exchange USDC for EURC and vice versa using the StableSwap invariant, a bonding curve specifically designed for assets that should trade at or near 1:1.
+        content: `The Swap feature lets you exchange USDC for EURC and vice versa using the StableSwap invariant, a bonding curve designed for assets that trade near 1:1.
 
-How to swap:
-1. Select the token you want to sell (From) and the token you want to receive (To)
-2. Enter the amount. The output is calculated automatically using live on-chain pricing
-3. Review the exchange rate, price impact, and minimum received
-4. Click "Approve" to grant the contract permission to spend your tokens (first time only)
-5. Click "Swap" to execute the trade
+Steps:
+1. Select the token to sell (From) and receive (To)
+2. Enter the amount. Output is calculated using live on-chain pricing
+3. Review exchange rate, price impact, and minimum received
+4. Click "Approve" to grant token spending permission (first time only)
+5. Click "Swap" to execute
 
-The swap is atomic: either the full trade succeeds or it reverts entirely. There is no partial fill risk.`,
+The swap is atomic: the full trade succeeds or reverts entirely.`,
       },
       {
+        id: "slippage",
         title: "Slippage Tolerance",
-        content: `Slippage tolerance is the maximum price deviation you're willing to accept between the quoted output and the actual execution amount.
+        content: `Slippage tolerance is the maximum price deviation you accept between the quote and execution.
 
-Setting slippage:
-• Click the gear icon on the Swap page
-• Choose from presets: 0.1%, 0.5%, 1.0%
-• Or enter a custom value
+Presets: 0.1%, 0.5%, 1.0% (or custom)
 
-How it works:
-The protocol calculates a "minimum received" amount based on your slippage setting. If the actual output falls below this threshold (due to other trades executing first), the transaction automatically reverts.
+How it works: The protocol calculates a "minimum received" amount. If actual output falls below this threshold, the transaction reverts.
 
 Recommendations:
-• 0.1%: Best for stable pairs with low volatility (recommended for USDC/EURC)
-• 0.5%: Good default for moderate activity periods
-• 1.0%: Use during high-traffic periods when prices may shift quickly`,
+  0.1%: Best for USDC/EURC (low volatility)
+  0.5%: Good default for moderate activity
+  1.0%: Use during high-traffic periods`,
       },
       {
+        id: "price-impact",
         title: "Price Impact",
-        content: `Price impact measures how much your trade moves the pool's exchange rate relative to the current spot price.
+        content: `Price impact measures how much your trade moves the pool's exchange rate.
 
-Impact levels:
-• Green (< 0.1%): Excellent. Virtually no impact on the pool price.
-• Yellow (0.1% to 1.0%): Moderate. Acceptable for most trade sizes.
-• Red (> 1.0%): High. Consider splitting your trade into smaller amounts.
+Levels:
+  Green (< 0.1%): Virtually no impact
+  Yellow (0.1% to 1.0%): Acceptable for most trades
+  Red (> 1.0%): Consider splitting into smaller amounts
 
-The StableSwap curve is specifically designed to minimise price impact for pegged assets. For the USDC/EURC pair, most trades under $50,000 will have negligible impact.
+The StableSwap curve minimises impact for pegged assets. Most trades under $50,000 have negligible impact.
 
-Price impact is different from slippage: impact is deterministic and based on trade size, while slippage accounts for price changes between quote and execution.`,
+Note: Price impact is deterministic (based on trade size), while slippage accounts for changes between quote and execution.`,
       },
     ],
   },
   {
+    id: "pool",
     category: "Liquidity Pool",
+    icon: "💧",
     sections: [
       {
+        id: "providing-liquidity",
         title: "Providing Liquidity",
-        content: `The Pool feature allows you to deposit USDC and/or EURC into the StableSwap pool. In return, you receive LP (Liquidity Provider) tokens that represent your proportional share of the pool.
+        content: `Deposit USDC and/or EURC into the StableSwap pool to receive LP tokens representing your proportional share.
 
-Adding liquidity:
+Steps:
 1. Navigate to Pool > Add Liquidity
-2. Enter the amount of USDC and/or EURC you want to deposit (single-sided or dual-sided)
-3. Approve each token if this is your first interaction
+2. Enter amounts (single-sided or dual-sided)
+3. Approve each token (first time)
 4. Click "Add Liquidity" to mint LP tokens
 
-Why provide liquidity:
-• Earn a share of swap fees from every trade through the pool
-• LP tokens appreciate in value as fees accumulate
-• You can withdraw at any time. There is no lock-up period`,
+Benefits:
+  Earn a share of swap fees from every trade
+  LP tokens appreciate as fees accumulate
+  No lock-up period; withdraw anytime`,
       },
       {
+        id: "removing-liquidity",
         title: "Removing Liquidity",
-        content: `You can withdraw your deposited assets at any time by burning your LP tokens.
+        content: `Withdraw deposited assets at any time by burning LP tokens.
 
-How to remove:
+Steps:
 1. Navigate to Pool > Remove Liquidity
-2. Select the percentage of your LP position to withdraw (25%, 50%, 75%, or 100%)
-3. Choose a withdrawal mode:
-   • Both tokens: Receive USDC and EURC proportionally
-   • USDC only: Withdraw entirely as USDC
-   • EURC only: Withdraw entirely as EURC
-4. Approve your LP tokens if needed
+2. Select withdrawal percentage (25%, 50%, 75%, or 100%)
+3. Choose mode: Both tokens, USDC only, or EURC only
+4. Approve LP tokens if needed
 5. Click "Remove Liquidity"
 
-Single-sided withdrawals may incur slightly higher slippage as the pool rebalances to accommodate the asymmetric removal.`,
+Single-sided withdrawals may have slightly higher slippage as the pool rebalances.`,
       },
       {
-        title: "LP Tokens & Fee Accrual",
-        content: `LP tokens are standard ERC-20 tokens that represent your ownership share of the pool.
+        id: "lp-tokens",
+        title: "LP Tokens and Fee Accrual",
+        content: `LP tokens are ERC-20 tokens representing pool ownership.
 
-How fees work:
-• Each swap through the pool charges a 0.4% fee
-• Fees are added directly to the pool's reserves
-• This increases the value of each LP token over time
-• You don't need to claim fees. They are automatically reflected in your LP token value
+Fee mechanics:
+  Each swap charges a 4.00% fee
+  Fees are added directly to pool reserves
+  LP token value increases over time
+  No manual claiming required
 
-Example: If you deposit $1,000 and fees accumulate to increase the pool by 1%, your LP tokens are now redeemable for $1,010 worth of underlying assets.
+Example: Deposit $1,000, fees accumulate 1% = LP tokens redeemable for $1,010.
 
-LP tokens can also be transferred or used in other DeFi protocols (composability).`,
+LP tokens are transferable and composable with other DeFi protocols.`,
       },
     ],
   },
   {
+    id: "yield",
     category: "Yield Vaults",
+    icon: "🏦",
     sections: [
       {
+        id: "vault-design",
         title: "ERC-4626 Vault Design",
-        content: `Lunex yield vaults follow the ERC-4626 Tokenised Vault Standard, which provides a standardised interface for yield-bearing vaults.
+        content: `Lunex yield vaults follow the ERC-4626 Tokenised Vault Standard.
 
 Available vaults:
-• USDC Vault: Deposits USDC, receives luneUSDC shares
-• EURC Vault: Deposits EURC, receives luneEURC shares
+  USDC Vault: Deposit USDC, receive luneUSDC shares
+  EURC Vault: Deposit EURC, receive luneEURC shares
 
-How it works:
-1. You deposit underlying tokens (USDC or EURC) into the vault
-2. The vault mints share tokens (luneUSDC or luneEURC) proportional to your deposit
-3. The vault's strategy generates yield on the deposited assets
-4. As yield accrues, the share price increases. Each share becomes redeemable for more underlying tokens
-5. When you withdraw, shares are burned and you receive the underlying tokens plus accumulated yield`,
+Flow:
+1. Deposit underlying tokens into the vault
+2. Vault mints share tokens proportional to your deposit
+3. Vault strategy generates yield on deposited assets
+4. Share price increases as yield accrues
+5. Withdraw: shares are burned, you receive underlying + accumulated yield`,
       },
       {
-        title: "Depositing & Withdrawing",
+        id: "deposit-withdraw",
+        title: "Depositing and Withdrawing",
         content: `Depositing:
-1. Go to Yield > select a vault (USDC or EURC)
-2. Enter the amount you want to deposit
-3. Approve the token contract (first time only)
-4. Click "Deposit". You'll receive share tokens in your wallet
+1. Go to Yield > select vault (USDC or EURC)
+2. Enter deposit amount
+3. Approve token (first time only)
+4. Click "Deposit" to receive share tokens
 
 Withdrawing:
-1. Go to Yield > select the vault > switch to the Withdraw tab
-2. Enter the amount of underlying tokens you want to receive
-3. Click "Withdraw". Your shares will be burned and you receive the underlying tokens
+1. Go to Yield > select vault > Withdraw tab
+2. Enter amount of underlying tokens to receive
+3. Click "Withdraw" to burn shares
 
-There is no withdrawal fee or lock-up period. Withdrawals are instant and atomic.`,
+No withdrawal fee or lock-up period. Withdrawals are instant and atomic.`,
       },
       {
-        title: "Share Price & Yield Calculation",
-        content: `The share price indicates how much underlying token each share is worth.
-
-Formula: Share Price = Total Assets in Vault / Total Shares Outstanding
+        id: "share-price",
+        title: "Share Price and Yield",
+        content: `Share Price = Total Assets in Vault / Total Shares Outstanding
 
 Example:
-• At launch, share price = 1.0000 (1 share = 1 USDC)
-• After yield accrues, share price = 1.0500 (1 share = 1.05 USDC)
-• If you hold 1,000 shares, they're now worth 1,050 USDC
+  Launch: share price = 1.0000 (1 share = 1 USDC)
+  After yield: share price = 1.0500 (1 share = 1.05 USDC)
+  1,000 shares = now worth 1,050 USDC
 
-The share price only increases. It never decreases under normal operation. This is because the vault's strategy adds yield to the total assets without minting new shares.
-
-APY will be displayed on the vault detail page once sufficient on-chain data is available (mainnet).`,
+The share price only increases under normal operation. APY will be displayed on mainnet once sufficient data is available.`,
       },
     ],
   },
   {
+    id: "bridge",
     category: "Bridge",
+    icon: "🌉",
     sections: [
       {
+        id: "cross-chain",
         title: "Cross-Chain Bridging",
-        content: `The Bridge page enables you to transfer tokens from other blockchain networks to Arc Network.
+        content: `Bridge USDC between chains using Circle's Cross-Chain Transfer Protocol (CCTP).
 
-Squid Router:
-• Powered by Axelar's cross-chain messaging protocol
-• Supports swapping any token on any supported chain directly to tokens on Arc Network
-• Handles routing, bridging, and destination-chain swaps in a single transaction
-• Supports chains like Ethereum, Polygon, Arbitrum, Optimism, BNB Chain, and more
+Supported chains:
+  Arc Testnet (destination)
+  Ethereum Sepolia
+  Arbitrum Sepolia
+  Polygon PoS Amoy
+  Avalanche Fuji
+  Base Sepolia
 
-Quick Fund (thirdweb Pay):
-• Simplified wallet funding for users who want to top up their Arc wallet quickly
-• Select Arc Network as the destination
-• Supports fiat on-ramp and cross-chain transfers
+Flow:
+1. Select source chain and enter USDC amount
+2. Approve USDC for burning
+3. Burn USDC on source chain
+4. Wait for Circle attestation (~2-5 minutes)
+5. Mint USDC on Arc Testnet
 
-Both options abstract away the complexity of cross-chain operations. You select source/destination tokens and the protocol handles the rest.`,
+Transactions can be resumed if interrupted. Bridge history tracks all past and pending transfers.`,
       },
     ],
   },
   {
-    category: "Technical Architecture",
+    id: "sdk",
+    category: "Lunex SDK (DEX Adapter)",
+    icon: "🔧",
     sections: [
       {
-        title: "StableSwap AMM (Curve Model)",
-        content: `Lunex Finance uses a Curve-style StableSwap invariant for its AMM. The StableSwap invariant combines the constant-product formula (x·y = k, used by Uniswap) with the constant-sum formula (x + y = k) to create a hybrid curve.
+        id: "sdk-overview",
+        title: "SDK Overview",
+        content: `The Lunex SDK is a RESTful API that enables DEX aggregators and external applications to integrate with the Lunex protocol programmatically.
 
-The invariant equation:
-A·n^n·∑xi + D = A·D·n^n + D^(n+1) / (n^n·∏xi)
+Base URL: https://<project-ref>.supabase.co/functions/v1
+
+Endpoints:
+  GET  /dex-adapter-info    Discovery and metadata (no auth)
+  GET  /dex-quote            Get swap quotes
+  POST /dex-swap             Generate unsigned swap transactions
+  GET  /dex-liquidity        Pool reserves, TVL, LP supply
+  GET  /dex-price            Current exchange rates with 24h data
+  POST /dex-webhook          Register reserve change webhooks
+  GET  /dex-webhook          List registered webhooks
+  DELETE /dex-webhook?id=    Remove a webhook
+
+All endpoints except /dex-adapter-info require an API key via the x-api-key header.`,
+      },
+      {
+        id: "sdk-auth",
+        title: "Authentication",
+        content: `All SDK endpoints (except /dex-adapter-info) require API key authentication.
+
+Header: x-api-key: <your-api-key>
+
+API keys are configured as a comma-separated list in the DEX_API_KEYS backend secret.
+
+Example:
+  curl -H "x-api-key: your-key" \\
+    https://your-project.supabase.co/functions/v1/dex-quote?tokenIn=0x36...&tokenOut=0x89...&amountIn=1000000
+
+If no API keys are configured, the endpoints operate in dev mode (all requests allowed).`,
+      },
+      {
+        id: "sdk-rate-limits",
+        title: "Rate Limits",
+        content: `Each endpoint has per-key rate limiting:
+
+  /dex-quote:      60 requests/minute
+  /dex-swap:       30 requests/minute
+  /dex-liquidity: 120 requests/minute
+  /dex-price:     120 requests/minute
+
+Response headers:
+  X-RateLimit-Limit:     Max requests per window
+  X-RateLimit-Remaining: Requests remaining
+  X-RateLimit-Reset:     Unix timestamp when window resets
+
+When exceeded, the API returns HTTP 429 with a JSON error body.`,
+      },
+      {
+        id: "sdk-quote",
+        title: "GET /dex-quote",
+        content: `Get a real-time swap quote from the on-chain pool.
+
+Parameters:
+  tokenIn   (required): Token address to sell
+  tokenOut  (required): Token address to buy
+  amountIn  (required): Amount in smallest unit (e.g. 1000000 = 1 USDC)
+  slippage  (optional): Percentage, default 0.5
+
+Supported tokens:
+  USDC: 0x3600000000000000000000000000000000000000
+  EURC: 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a
+
+Example request:
+  GET /dex-quote?tokenIn=0x3600...&tokenOut=0x89B5...&amountIn=1000000
+
+Example response:
+  {
+    "success": true,
+    "data": {
+      "amountOut": "995200",
+      "priceImpact": 0.0012,
+      "route": [{ "protocol": "Lunex", "pool": "0xC24B..." }],
+      "estimatedGas": "150000",
+      "fees": { "swapFeePercent": "4.0000", "protocolFee": "0" }
+    }
+  }
+
+Error cases:
+  400: Missing parameters, unsupported tokens, same token in/out, zero amount
+  429: Rate limit exceeded
+  500: RPC or internal error`,
+      },
+      {
+        id: "sdk-swap",
+        title: "POST /dex-swap",
+        content: `Generate unsigned transaction data for a swap (approve + exchange).
+
+Request body (JSON):
+  {
+    "walletAddress": "0x...",   // required, must be valid address
+    "tokenIn": "0x...",         // required
+    "tokenOut": "0x...",        // required
+    "amountIn": "1000000",      // required, smallest unit
+    "slippage": 0.5             // optional, default 0.5%
+  }
+
+Response:
+  {
+    "success": true,
+    "data": {
+      "approveTransaction": {
+        "to": "0x3600...",
+        "data": "0x095ea7b3...",
+        "value": "0x0",
+        "chainId": 5042002,
+        "gasLimit": "60000"
+      },
+      "swapTransaction": {
+        "to": "0xC24B...",
+        "data": "0x5b41b908...",
+        "value": "0x0",
+        "chainId": 5042002,
+        "gasLimit": "250000"
+      },
+      "expectedOutput": "995200",
+      "minimumOutput": "990224",
+      "slippagePercent": 0.5
+    }
+  }
+
+Integration flow:
+1. Call /dex-swap to get transaction data
+2. Submit approveTransaction via user's wallet
+3. Wait for approval confirmation
+4. Submit swapTransaction via user's wallet`,
+      },
+      {
+        id: "sdk-liquidity",
+        title: "GET /dex-liquidity",
+        content: `Returns current pool state including reserves, TVL, fee, and LP token data.
+
+No parameters required.
+
+Response:
+  {
+    "success": true,
+    "data": {
+      "pool": {
+        "address": "0xC24B...",
+        "type": "StableSwap (Curve-style)",
+        "fee": { "raw": "4000000", "percent": "4.0000" }
+      },
+      "reserves": [
+        { "symbol": "USDC", "address": "0x3600...", "reserveFormatted": "925.850000" },
+        { "symbol": "EURC", "address": "0x89B5...", "reserveFormatted": "925.860000" }
+      ],
+      "tvl": { "usd": "1851.71", "formatted": "$1,851.71" },
+      "lpToken": {
+        "address": "0x...",
+        "totalSupplyFormatted": "1851.710000"
+      }
+    }
+  }`,
+      },
+      {
+        id: "sdk-price",
+        title: "GET /dex-price",
+        content: `Returns the current USDC/EURC exchange rate with 24h price tracking.
+
+No parameters required.
+
+Response:
+  {
+    "success": true,
+    "data": {
+      "pair": "USDC/EURC",
+      "prices": {
+        "usdcToEurc": { "rate": "0.995200", "inverseRate": "1.004824" },
+        "eurcToUsdc": { "rate": "0.995180", "inverseRate": "1.004844" }
+      },
+      "change24h": { "percent": "0.0100", "direction": "up", "dataPoints": 42 },
+      "range24h": { "high": "0.995300", "low": "0.995100" },
+      "pool": {
+        "fee": "4.0000%",
+        "usdcReserve": "925.85",
+        "eurcReserve": "925.86",
+        "tvl": "1851.71"
+      }
+    }
+  }
+
+Note: 24h data accumulates from the edge function's first invocation. Data resets if the serverless isolate restarts.`,
+      },
+      {
+        id: "sdk-webhook",
+        title: "Webhooks",
+        content: `Register webhooks to receive POST notifications when pool reserves change significantly.
+
+Register a webhook:
+  POST /dex-webhook
+  Body:
+  {
+    "url": "https://your-server.com/webhook",
+    "events": ["reserve_change"],
+    "thresholdPercent": 5
+  }
+
+  Response: { "success": true, "data": { "id": "uuid", ... } }
+
+List your webhooks:
+  GET /dex-webhook
+
+Remove a webhook:
+  DELETE /dex-webhook?id=<webhook-id>
+
+Webhook payload (sent to your URL):
+  {
+    "event": "reserve_change",
+    "protocol": "Lunex",
+    "pool": "0xC24B...",
+    "previous": { "usdc": 925.85, "eurc": 925.86 },
+    "current": { "usdc": 880.10, "eurc": 971.61 },
+    "changePercent": { "usdc": "4.9400", "eurc": "4.9400" },
+    "timestamp": "2026-03-29T12:00:00.000Z"
+  }
+
+Webhooks are stored in-memory per edge function isolate. For production, persist webhook registrations in a database.`,
+      },
+      {
+        id: "sdk-integration",
+        title: "Integration Guide",
+        content: `Step-by-step for DEX aggregators:
+
+1. Discovery: Call GET /dex-adapter-info to discover tokens, endpoints, and rate limits
+
+2. Check Liquidity: Call GET /dex-liquidity to verify pool TVL and reserve balances
+
+3. Get Price: Call GET /dex-price for current exchange rates
+
+4. Quote: Call GET /dex-quote with token addresses and amount to get expected output, price impact, and fees
+
+5. Build Transaction: Call POST /dex-swap with wallet address and trade parameters to receive unsigned transaction data
+
+6. Execute:
+   a. Submit the approveTransaction to the user's wallet
+   b. Wait for confirmation
+   c. Submit the swapTransaction to the user's wallet
+
+7. (Optional) Monitor: Register a webhook via POST /dex-webhook to get notified of significant reserve changes
+
+Supported tokens:
+  USDC: 0x3600000000000000000000000000000000000000 (6 decimals)
+  EURC: 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a (6 decimals)
+
+Pool: 0xC24BFc8e4b10500a72A63Bec98CCC989CbDA41d8
+Chain: Arc Testnet (5042002)
+RPC: https://rpc.testnet.arc.network`,
+      },
+    ],
+  },
+  {
+    id: "technical",
+    category: "Technical Architecture",
+    icon: "⚙️",
+    sections: [
+      {
+        id: "stableswap",
+        title: "StableSwap AMM (Curve Model)",
+        content: `Lunex uses a Curve-style StableSwap invariant combining constant-product (x*y=k) with constant-sum (x+y=k) for a hybrid curve.
+
+Invariant: A*n^n*sum(xi) + D = A*D*n^n + D^(n+1) / (n^n*prod(xi))
 
 Where:
-• A = amplification coefficient (controls curve shape)
-• n = number of tokens (2 for USDC/EURC)
-• D = total deposits invariant
-• xi = individual token balances
+  A = amplification coefficient (controls curve flatness near peg)
+  n = number of tokens (2 for USDC/EURC)
+  D = total deposits invariant
+  xi = individual token balances
 
-A higher amplification coefficient (A) makes the curve flatter around the peg, meaning trades near 1:1 have virtually zero slippage. As trades deviate from the peg, the curve steepens to protect the pool from extreme imbalance.
-
-This design is optimal for stablecoin pairs because both assets are expected to maintain a near-1:1 exchange rate.`,
+Higher A = flatter curve near peg = lower slippage for pegged assets. This is optimal for stablecoin pairs where both assets target ~1:1.`,
       },
       {
+        id: "contracts",
         title: "Smart Contracts",
-        content: `Lunex Finance is composed of four core smart contracts deployed on Arc Network Testnet:
+        content: `Four core contracts on Arc Network Testnet:
 
-1. StableSwapPool: The AMM pool contract handling swaps, liquidity addition/removal, and fee calculation. Implements the StableSwap invariant with configurable amplification coefficient.
+1. StableSwapPool: AMM handling swaps, liquidity, and fees. Implements StableSwap invariant with configurable amplification.
 
-2. USDC Vault (ERC-4626): A tokenised vault for USDC deposits. Mints luneUSDC share tokens. Implements the full ERC-4626 standard including deposit(), withdraw(), redeem(), convertToAssets(), and convertToShares().
+2. USDC Vault (ERC-4626): Tokenised vault for USDC. Mints luneUSDC shares. Full ERC-4626: deposit(), withdraw(), redeem(), convertToAssets(), convertToShares().
 
-3. EURC Vault (ERC-4626): Same architecture as the USDC vault but for EURC deposits. Mints luneEURC share tokens.
+3. EURC Vault (ERC-4626): Same architecture for EURC. Mints luneEURC shares.
 
-4. LP Token (ERC-20): Standard ERC-20 token minted when users provide liquidity. Represents proportional pool ownership.
+4. LP Token (ERC-20): Standard ERC-20 minted on liquidity provision. Represents proportional pool ownership.
 
-All contracts are verified on the Arc Testnet explorer (https://testnet.arcscan.app). Contract addresses are configured in the app and can be inspected in the source code.`,
+All contracts are verified on Arc Testnet explorer (https://testnet.arcscan.app).`,
       },
       {
+        id: "erc4626",
         title: "ERC-4626 Standard",
-        content: `ERC-4626 is an Ethereum standard for tokenised yield-bearing vaults. It provides a unified API that all vaults implement, making them composable with other DeFi protocols.
+        content: `ERC-4626 is the Ethereum standard for tokenised yield-bearing vaults.
 
 Key functions:
-• deposit(assets, receiver): Deposit underlying tokens, receive shares
-• withdraw(assets, receiver, owner): Burn shares to receive a specific amount of underlying
-• redeem(shares, receiver, owner): Burn a specific number of shares
-• convertToAssets(shares): Preview how many underlying tokens shares are worth
-• convertToShares(assets): Preview how many shares a deposit would mint
-• totalAssets(): Total underlying tokens held by the vault
-• previewDeposit(assets) / previewWithdraw(assets): Simulate operations
+  deposit(assets, receiver): Deposit underlying, receive shares
+  withdraw(assets, receiver, owner): Burn shares for specific underlying amount
+  redeem(shares, receiver, owner): Burn specific share count
+  convertToAssets(shares): Preview underlying value
+  convertToShares(assets): Preview shares for deposit
+  totalAssets(): Total underlying held by vault
+  previewDeposit(assets) / previewWithdraw(assets): Simulate operations
 
-Benefits of ERC-4626:
-• Composability: Any protocol can integrate with the vault using the standard interface
-• Transparency: Share price and vault state are fully on-chain
-• Security: Standardised implementations reduce smart contract risk`,
+Benefits: Composability with any DeFi protocol, full on-chain transparency, standardised interface reduces integration risk.`,
       },
       {
-        title: "Network & Gas",
-        content: `Arc Network is an EVM-compatible Layer 2 network designed for high-throughput, low-cost transactions.
+        id: "network",
+        title: "Network and Gas",
+        content: `Arc Network is an EVM-compatible L2 for high-throughput, low-cost transactions.
 
-Network details:
-• Chain ID: 5042002 (Testnet)
-• RPC: https://rpc.testnet.arc.network
-• Explorer: https://testnet.arcscan.app
-• Gas token: USDC (native gas)
+Details:
+  Chain ID: 5042002 (Testnet)
+  RPC: https://rpc.testnet.arc.network
+  Explorer: https://testnet.arcscan.app
+  Gas token: USDC (native gas)
 
-Gas costs on Arc Testnet are minimal. Typical operations:
-• Swap: ~0.001 USDC
-• Add Liquidity: ~0.002 USDC
-• Vault Deposit: ~0.001 USDC
-• Token Approval: ~0.0005 USDC
+Typical costs:
+  Swap: ~0.001 USDC
+  Add Liquidity: ~0.002 USDC
+  Vault Deposit: ~0.001 USDC
+  Token Approval: ~0.0005 USDC
 
-All gas fees are paid in USDC, which simplifies the user experience. No need to hold a separate gas token.`,
+All gas fees are paid in USDC. No separate gas token needed.`,
       },
       {
-        title: "Security Considerations",
-        content: `Lunex Finance is currently deployed on testnet. The following security measures are in place or planned:
+        id: "security",
+        title: "Security",
+        content: `Current measures:
+  All contracts verified on block explorer
+  OpenZeppelin libraries for ERC-20 and ERC-4626
+  Reentrancy guards on all state-changing functions
+  Access control on admin functions
 
-Current:
-• All contracts are verified on the block explorer
-• Standard OpenZeppelin libraries used for ERC-20 and ERC-4626 implementations
-• Reentrancy guards on all state-changing functions
-• Access control on admin-only functions
+Planned for mainnet:
+  Full third-party smart contract audit
+  Bug bounty program
+  Time-locked admin functions
+  Multi-sig wallet for governance
+  Emergency pause functionality
 
-Planned for Mainnet:
-• Full third-party smart contract audit
-• Bug bounty program
-• Time-locked admin functions (timelock controller)
-• Multi-sig wallet for protocol governance
-• Emergency pause functionality
-
-Users should be aware that testnet contracts may be updated or redeployed without notice. Do not use real funds on testnet.`,
+Testnet contracts may be updated without notice. Do not use real funds.`,
       },
     ],
   },
   {
+    id: "faq",
     category: "FAQ",
+    icon: "❓",
     sections: [
       {
+        id: "faq-main",
         title: "Frequently Asked Questions",
-        content: `Q: Is Lunex Finance audited?
-A: Lunex Finance is on testnet. A full third-party audit will be completed before mainnet launch.
+        content: `Q: Is Lunex audited?
+A: Currently on testnet. Full audit before mainnet launch.
 
 Q: What fees does the protocol charge?
-A: The StableSwap pool charges a 0.4% fee on each swap. This fee goes entirely to liquidity providers. There are no protocol-level fees at this time.
+A: The StableSwap pool charges 4.00% per swap, going entirely to LPs. No protocol-level fees.
 
 Q: Can I lose money providing liquidity?
-A: While the StableSwap curve minimises impermanent loss for pegged assets, risk always exists. If one stablecoin depegs, LP positions may become imbalanced. Always do your own research.
+A: The StableSwap curve minimises impermanent loss for pegged assets, but risk exists if a stablecoin depegs.
 
 Q: What is the APY on yield vaults?
-A: APY is not currently displayed on testnet. On mainnet, APY will be calculated from actual vault performance and displayed on each vault's detail page.
+A: Not displayed on testnet. Will be calculated from actual vault performance on mainnet.
 
 Q: How do I get testnet tokens?
-A: Visit faucet.circle.com to receive testnet USDC. You can then swap USDC for EURC on Lunex.
+A: Visit faucet.circle.com for testnet USDC. Then swap for EURC on Lunex.
 
-Q: Where can I see my transactions?
-A: Each page (Swap, Pool, Yield) displays your recent transaction history. The Dashboard shows all recent activity across features.
+Q: Where can I see transactions?
+A: Each page shows recent history. Dashboard shows all activity.
 
-Q: Is there a token or governance system?
-A: Not at this time. Governance and tokenomics are being explored for future development.
+Q: Is there a token or governance?
+A: Not yet. Being explored for future development.
 
 Q: Which wallets are supported?
-A: Any EVM-compatible wallet including MetaMask, Rabby, Coinbase Wallet, WalletConnect-compatible wallets, and more.`,
+A: Any EVM-compatible wallet: MetaMask, Rabby, Coinbase Wallet, WalletConnect, etc.`,
       },
     ],
   },
 ];
 
-const CollapsibleSection = ({ section }: { section: DocSection }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-border bg-card">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-muted/30 transition-colors"
-      >
-        <span className="text-sm font-semibold tracking-wider uppercase text-foreground">{section.title}</span>
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-      </button>
-      {open && (
-        <div className="px-6 pb-6 pt-0">
-          <pre className="text-sm text-foreground whitespace-pre-wrap leading-relaxed font-sans">{section.content}</pre>
-        </div>
-      )}
-    </div>
-  );
-};
-
 const Docs = () => {
   const [search, setSearch] = useState("");
+  const [activeSection, setActiveSection] = useState<string>("what-is-lunex");
 
   const filtered = useMemo(() => {
     if (!search.trim()) return docs;
@@ -379,38 +640,143 @@ const Docs = () => {
       .filter((cat) => cat.sections.length > 0);
   }, [search]);
 
+  const activeDoc = useMemo(() => {
+    for (const cat of docs) {
+      for (const s of cat.sections) {
+        if (s.id === activeSection) return s;
+      }
+    }
+    return docs[0]?.sections[0];
+  }, [activeSection]);
+
+  const isSearching = search.trim().length > 0;
+
   return (
-    <div className="page-fade-in container max-w-3xl mx-auto py-16">
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">Documentation</h1>
-      <p className="text-sm text-muted-foreground mb-6 tracking-wider">
-        Lunex Finance: Complete User & Technical Guide
-      </p>
-
-      <div className="relative mb-10">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search documentation..."
-          className="w-full pl-10 pr-4 py-3 text-sm border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-        />
-      </div>
-
-      {filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">No results found for "{search}"</p>
-      )}
-
-      {filtered.map((cat) => (
-        <div key={cat.category} className="mb-10">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 px-1">{cat.category}</h2>
-          <div className="space-y-1">
-            {cat.sections.map((s) => (
-              <CollapsibleSection key={s.title} section={s} />
-            ))}
+    <div className="page-fade-in min-h-[calc(100vh-3.5rem)]">
+      <div className="container max-w-7xl mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold uppercase tracking-tight">Documentation</h1>
           </div>
+          <p className="text-sm text-muted-foreground tracking-wider">
+            Complete guide to using Lunex protocol and SDK
+          </p>
         </div>
-      ))}
+
+        {/* Search */}
+        <div className="relative mb-8 max-w-xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search docs..."
+            className="w-full pl-10 pr-4 py-2.5 text-sm border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors rounded-md"
+          />
+        </div>
+
+        {isSearching ? (
+          /* Search Results */
+          <div className="max-w-3xl">
+            {filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-12">No results found for "{search}"</p>
+            ) : (
+              filtered.map((cat) => (
+                <div key={cat.id} className="mb-8">
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
+                    <span>{cat.icon}</span> {cat.category}
+                  </h2>
+                  <div className="space-y-2">
+                    {cat.sections.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => { setActiveSection(s.id); setSearch(""); }}
+                        className="w-full text-left border border-border bg-card hover:border-primary/30 p-4 transition-colors rounded-md"
+                      >
+                        <p className="text-sm font-semibold text-foreground mb-1">{s.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{s.content.slice(0, 120)}...</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          /* Main Layout: Sidebar + Content */
+          <div className="flex gap-8">
+            {/* Sidebar */}
+            <aside className="hidden lg:block w-64 shrink-0">
+              <nav className="sticky top-20 space-y-6 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
+                {docs.map((cat) => (
+                  <div key={cat.id}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                      <span>{cat.icon}</span> {cat.category}
+                    </p>
+                    <div className="space-y-0.5">
+                      {cat.sections.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setActiveSection(s.id)}
+                          className={`w-full text-left text-sm px-3 py-1.5 rounded-md transition-colors flex items-center gap-2 ${
+                            activeSection === s.id
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          {activeSection === s.id && <ChevronRight className="h-3 w-3 shrink-0" />}
+                          <span className="truncate">{s.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+            </aside>
+
+            {/* Mobile Nav */}
+            <div className="lg:hidden w-full">
+              <select
+                value={activeSection}
+                onChange={(e) => setActiveSection(e.target.value)}
+                className="w-full mb-6 p-2.5 text-sm border border-border bg-card text-foreground rounded-md"
+              >
+                {docs.map((cat) => (
+                  <optgroup key={cat.id} label={`${cat.icon} ${cat.category}`}>
+                    {cat.sections.map((s) => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {/* Content */}
+            <main className="flex-1 min-w-0 hidden lg:block">
+              {activeDoc && (
+                <article className="border border-border bg-card rounded-md p-8">
+                  <h2 className="text-xl font-bold text-foreground mb-6 tracking-tight">{activeDoc.title}</h2>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="text-sm text-foreground whitespace-pre-wrap leading-relaxed font-sans m-0 p-0 bg-transparent border-none">{activeDoc.content}</pre>
+                  </div>
+                </article>
+              )}
+            </main>
+          </div>
+        )}
+
+        {/* Mobile content (shown below select) */}
+        <div className="lg:hidden">
+          {activeDoc && !isSearching && (
+            <article className="border border-border bg-card rounded-md p-6">
+              <h2 className="text-lg font-bold text-foreground mb-4 tracking-tight">{activeDoc.title}</h2>
+              <pre className="text-sm text-foreground whitespace-pre-wrap leading-relaxed font-sans m-0 p-0 bg-transparent border-none">{activeDoc.content}</pre>
+            </article>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
