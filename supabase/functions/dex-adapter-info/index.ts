@@ -14,19 +14,20 @@ serve(async (req) => {
 
   return new Response(
     JSON.stringify({
-      protocol: "Lunex Finance",
-      version: "1.1.0",
-      description: "StableSwap AMM on Arc Testnet — USDC/EURC pool",
+      protocol: "Lunex",
+      version: "1.2.0",
+      description: "StableSwap AMM on Arc Testnet with USDC/EURC pool",
       chain: { id: 5042002, name: "Arc Testnet", rpc: "https://rpc.testnet.arc.network" },
       authentication: {
         method: "API Key",
         header: "x-api-key",
-        note: "Required on /dex-quote, /dex-swap, /dex-liquidity. Not required on this info endpoint.",
+        note: "Required on /dex-quote, /dex-swap, /dex-liquidity, /dex-price, /dex-webhook. Not required on this info endpoint.",
       },
       rateLimits: {
         quote: "60 requests/minute per API key",
         swap: "30 requests/minute per API key",
         liquidity: "120 requests/minute per API key",
+        price: "120 requests/minute per API key",
         headers: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
       },
       pool: {
@@ -53,16 +54,28 @@ serve(async (req) => {
           description: "Pool reserves, TVL, LP token supply",
           rateLimit: "120/min",
         },
+        price: {
+          method: "GET", path: "/dex-price",
+          description: "Current USDC/EURC exchange rate with 24h change data",
+          rateLimit: "120/min",
+        },
+        webhook: {
+          methods: ["GET", "POST", "DELETE"], path: "/dex-webhook",
+          description: "Register/manage webhooks for pool reserve change notifications",
+          body: { url: "Webhook URL (required)", events: "Array of events (optional, default: [reserve_change])", thresholdPercent: "Min % change to trigger (optional, default: 5)" },
+        },
         info: { method: "GET", path: "/dex-adapter-info", description: "This endpoint (no auth required)" },
       },
       integration: {
         steps: [
           "1. Obtain an API key (set DEX_API_KEYS secret on the backend)",
-          "2. Call /dex-adapter-info to discover supported tokens",
-          "3. Call /dex-liquidity to check pool TVL and reserves",
-          "4. Call /dex-quote with x-api-key header for pricing",
-          "5. Call /dex-swap to get unsigned approve + swap tx data",
-          "6. Submit approve tx, then swap tx via user's wallet",
+          "2. Call /dex-adapter-info to discover supported tokens and endpoints",
+          "3. Call /dex-price to get current exchange rates",
+          "4. Call /dex-liquidity to check pool TVL and reserves",
+          "5. Call /dex-quote with x-api-key header for pricing",
+          "6. Call /dex-swap to get unsigned approve + swap tx data",
+          "7. Submit approve tx, then swap tx via user's wallet",
+          "8. (Optional) Register a webhook via /dex-webhook for reserve change alerts",
         ],
       },
     }),
