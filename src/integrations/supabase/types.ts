@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      protocol_stats: {
+        Row: {
+          id: number
+          last_updated: string
+          pool_volume_usd: number
+          swap_volume_usd: number
+          total_volume_usd: number
+          vault_volume_usd: number
+        }
+        Insert: {
+          id?: number
+          last_updated?: string
+          pool_volume_usd?: number
+          swap_volume_usd?: number
+          total_volume_usd?: number
+          vault_volume_usd?: number
+        }
+        Update: {
+          id?: number
+          last_updated?: string
+          pool_volume_usd?: number
+          swap_volume_usd?: number
+          total_volume_usd?: number
+          vault_volume_usd?: number
+        }
+        Relationships: []
+      }
+      protocol_volume: {
+        Row: {
+          amount_usd: number
+          block_number: number
+          contract: string
+          event_type: string
+          id: string
+          timestamp: string
+          tx_hash: string
+        }
+        Insert: {
+          amount_usd?: number
+          block_number: number
+          contract: string
+          event_type: string
+          id?: string
+          timestamp?: string
+          tx_hash: string
+        }
+        Update: {
+          amount_usd?: number
+          block_number?: number
+          contract?: string
+          event_type?: string
+          id?: string
+          timestamp?: string
+          tx_hash?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           created_at: string
