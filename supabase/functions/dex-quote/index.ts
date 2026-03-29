@@ -35,9 +35,9 @@ function decodeBigInt(hex: string): bigint {
   return BigInt("0x" + clean);
 }
 
-// get_dy(uint256,uint256,uint256) selector: 0x5e0d443f
-const GET_DY_SELECTOR = "0x5e0d443f";
-// fee() selector: 0xddca3f43
+// get_dy(uint256,uint256,uint256) selector
+const GET_DY_SELECTOR = "0x556d6e9f";
+// fee() selector
 const FEE_SELECTOR = "0xddca3f43";
 
 async function ethCall(to: string, data: string): Promise<string> {

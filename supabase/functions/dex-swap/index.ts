@@ -39,7 +39,7 @@ function decodeBigInt(hex: string): bigint {
 }
 
 // Function selectors
-const GET_DY_SELECTOR = "0x5e0d443f"; // get_dy(uint256,uint256,uint256)
+const GET_DY_SELECTOR = "0x556d6e9f"; // get_dy(uint256,uint256,uint256)
 const EXCHANGE_SELECTOR = "0x5b41b908"; // exchange(uint256,uint256,uint256,uint256)
 const APPROVE_SELECTOR = "0x095ea7b3"; // approve(address,uint256)
 
