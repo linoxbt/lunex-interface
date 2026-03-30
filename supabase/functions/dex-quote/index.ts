@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // ─── Lunex Finance DEX Adapter — Quote Endpoint ───
 // GET /dex-quote?tokenIn=0x...&tokenOut=0x...&amountIn=1000000&slippage=0.5
@@ -32,13 +33,25 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number; res
   };
 }
 
-// ─── API Key Auth ───
-function validateApiKey(req: Request): { valid: boolean; key: string } {
+// ─── DB-backed API Key Auth ───
+function getAdminClient() {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+}
+
+async function validateApiKey(req: Request): Promise<{ valid: boolean; key: string; keyId: string | null }> {
   const apiKey = req.headers.get("x-api-key") || "";
-  const validKeys = (Deno.env.get("DEX_API_KEYS") || "").split(",").map(k => k.trim()).filter(Boolean);
-  // If no keys configured, allow all (dev mode)
-  if (validKeys.length === 0) return { valid: true, key: "anonymous" };
-  return { valid: validKeys.includes(apiKey), key: apiKey };
+  if (!apiKey) return { valid: false, key: "", keyId: null };
+  const db = getAdminClient();
+  const { data } = await db.from("dex_api_keys").select("id").eq("key_value", apiKey).eq("is_active", true).maybeSingle();
+  return { valid: !!data, key: apiKey, keyId: data?.id || null };
+}
+
+async function logUsage(keyId: string | null, endpoint: string, method: string, statusCode: number, rateLimited: boolean) {
+  if (!keyId) return;
+  try {
+    const db = getAdminClient();
+    await db.from("dex_api_usage").insert({ api_key_id: keyId, endpoint, method, status_code: statusCode, rate_limited: rateLimited });
+  } catch { /* non-blocking */ }
 }
 
 // ─── Contract Config ───
@@ -123,7 +136,7 @@ serve(async (req) => {
   }
 
   // ─── Auth check ───
-  const auth = validateApiKey(req);
+  const auth = await validateApiKey(req);
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key", hint: "Set x-api-key header" }), {
       status: 401, headers: CORS_HEADERS,
@@ -139,6 +152,7 @@ serve(async (req) => {
     "X-RateLimit-Reset": String(Math.ceil(rl.resetAt / 1000)),
   };
   if (!rl.allowed) {
+    await logUsage(auth.keyId, "/dex-quote", "GET", 429, true);
     return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), {
       status: 429, headers: rlHeaders,
     });
@@ -156,6 +170,7 @@ serve(async (req) => {
     const slippage = parseFloat(url.searchParams.get("slippage") || "0.5");
 
     if (!tokenIn || !tokenOut || !amountIn) {
+      await logUsage(auth.keyId, "/dex-quote", "GET", 400, false);
       return new Response(
         JSON.stringify({
           error: "Missing required parameters",
@@ -168,18 +183,20 @@ serve(async (req) => {
     }
 
     const quote = await getQuote(tokenIn, tokenOut, amountIn, slippage);
+    await logUsage(auth.keyId, "/dex-quote", "GET", 200, false);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: quote,
-        meta: { protocol: "Lunex Finance", chainId: 5042002, chainName: "Arc Testnet", timestamp: new Date().toISOString() },
+        meta: { protocol: "Lunex", chainId: 5042002, chainName: "Arc Testnet", timestamp: new Date().toISOString() },
       }),
       { status: 200, headers: rlHeaders }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     const status = message.includes("Unsupported") || message.includes("must be") ? 400 : 500;
+    await logUsage(auth.keyId, "/dex-quote", "GET", status, false);
     return new Response(JSON.stringify({ success: false, error: message }), { status, headers: rlHeaders });
   }
 });
