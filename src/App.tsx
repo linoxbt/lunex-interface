@@ -22,6 +22,7 @@ import Dashboard from "@/pages/Dashboard";
 import ProtocolStats from "@/pages/ProtocolStats";
 import Bridge from "@/pages/Bridge";
 import Docs from "@/pages/Docs";
+import LunexSDK from "@/pages/LunexSDK";
 import NotFound from "@/pages/NotFound";
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -44,6 +45,7 @@ const AnimatedRoutes = () => {
         <Route path="/protocol" element={<PageTransition><ProtocolStats /></PageTransition>} />
         <Route path="/bridge" element={<PageTransition><Bridge /></PageTransition>} />
         <Route path="/docs" element={<PageTransition><Docs /></PageTransition>} />
+        <Route path="/lunexsdk" element={<PageTransition><LunexSDK /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
