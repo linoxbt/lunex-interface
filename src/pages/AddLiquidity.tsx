@@ -8,6 +8,7 @@ import { useAddLiquidity } from "@/hooks/useLiquidity";
 import { usePoolData } from "@/hooks/usePoolData";
 import { TransactionModal, computeTxStage } from "@/components/TransactionModal";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
+import BackButton from "@/components/BackButton";
 
 const AddLiquidity = () => {
   const { isConnected } = useAccount();
@@ -78,6 +79,7 @@ const AddLiquidity = () => {
 
   return (
     <div className="container max-w-md mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Add Liquidity</h1>
       <div className="border border-border bg-card p-6 space-y-4">
         {tokenFields.map(({ token, value, onChange }) => {

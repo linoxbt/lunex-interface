@@ -9,6 +9,7 @@ import { useRemoveLiquidity } from "@/hooks/useLiquidity";
 import { usePoolData } from "@/hooks/usePoolData";
 import { TransactionModal, computeTxStage } from "@/components/TransactionModal";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
+import BackButton from "@/components/BackButton";
 
 const RemoveLiquidity = () => {
   const { isConnected } = useAccount();
@@ -87,6 +88,7 @@ const RemoveLiquidity = () => {
 
   return (
     <div className="container max-w-md mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Remove Liquidity</h1>
       <div className="border border-border bg-card p-6 space-y-6">
         <div>

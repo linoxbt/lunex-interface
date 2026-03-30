@@ -5,6 +5,7 @@ import { useVaultData } from "@/hooks/useVaultData";
 import { SectionHistory } from "@/components/SectionHistory";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 
 const YIELD_COLUMNS = [
   { key: "action", label: "Action" },
@@ -28,6 +29,7 @@ const YieldOverview = () => {
 
   return (
     <div className="container max-w-3xl mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Yield Vaults</h1>
 
       {isConnected && hasPositions && (
