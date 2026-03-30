@@ -12,6 +12,7 @@ import { useSectionHistory } from "@/hooks/useSectionHistory";
 import { formatUnits, parseUnits } from "viem";
 import { vaultAbi } from "@/config/abis";
 import { CONTRACTS, arcTestnet } from "@/config/wagmi";
+import BackButton from "@/components/BackButton";
 
 const VaultDetail = () => {
   const { token } = useParams<{ token: string }>();
@@ -141,6 +142,7 @@ const VaultDetail = () => {
 
   return (
     <div className="container max-w-md mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">{shareName} Vault</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">
         APY: <span className="font-mono">—</span> · Share Price: 1 {shareName} = {vault.sharePrice.toFixed(6)} {tokenName}

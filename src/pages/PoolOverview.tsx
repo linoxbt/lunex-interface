@@ -6,6 +6,7 @@ import { usePoolData } from "@/hooks/usePoolData";
 import { SectionHistory } from "@/components/SectionHistory";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 
 const POOL_COLUMNS = [
   { key: "action", label: "Action" },
@@ -25,6 +26,7 @@ const PoolOverview = () => {
 
   return (
     <div className="container max-w-2xl mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Pool</h1>
 
       {isConnected && pool.isLpBalanceLoading && (

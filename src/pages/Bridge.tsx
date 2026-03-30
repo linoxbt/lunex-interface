@@ -11,6 +11,7 @@ import { BridgeProgress } from "@/features/bridge/components/BridgeProgress";
 import { BridgeHistory } from "@/features/bridge/components/BridgeHistory";
 import { getPendingBridgeTransactions } from "@/features/bridge/state/bridgeState";
 import type { BridgeChainKey } from "@/features/bridge/config/bridgeConfig";
+import BackButton from "@/components/BackButton";
 
 const Bridge = () => {
   const { isConnected } = useAccount();
@@ -64,6 +65,7 @@ const Bridge = () => {
 
   return (
     <div className="container max-w-lg mx-auto py-16 px-4">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider">
         Bridge USDC across chains via Circle CCTP

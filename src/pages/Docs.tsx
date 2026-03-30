@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, BookOpen, ChevronRight, ExternalLink } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 interface DocSection {
   id: string;
@@ -654,6 +655,7 @@ const Docs = () => {
   return (
     <div className="page-fade-in min-h-[calc(100vh-3.5rem)]">
       <div className="container max-w-7xl mx-auto py-8 px-4">
+        <BackButton />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">

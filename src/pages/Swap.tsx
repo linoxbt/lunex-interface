@@ -10,6 +10,7 @@ import { TokenSelector } from "@/components/TokenSelector";
 import { TransactionModal, computeTxStage } from "@/components/TransactionModal";
 import { SectionHistory } from "@/components/SectionHistory";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
+import BackButton from "@/components/BackButton";
 
 const tokenList = Object.values(TOKENS);
 const slippageOptions = ["0.1", "0.5", "1.0"];
@@ -83,6 +84,7 @@ const Swap = () => {
 
   return (
     <div className="container max-w-lg mx-auto py-16">
+      <BackButton />
       {isConnected && (
         <div className="grid grid-cols-2 gap-px bg-border mb-6">
           <div className="p-4 bg-card">

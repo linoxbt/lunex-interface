@@ -3,6 +3,7 @@ import { usePoolData } from "@/hooks/usePoolData";
 import { useVaultData } from "@/hooks/useVaultData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import BackButton from "@/components/BackButton";
 
 const ProtocolStats = () => {
   const pool = usePoolData();
@@ -27,6 +28,7 @@ const ProtocolStats = () => {
 
   return (
     <div className="container max-w-3xl mx-auto py-16">
+      <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">Protocol Stats</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">Lunex | Live Onchain Data</p>
 

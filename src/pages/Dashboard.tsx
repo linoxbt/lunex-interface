@@ -6,6 +6,7 @@ import { Wallet } from "lucide-react";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import { SectionHistory } from "@/components/SectionHistory";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 
 const ACTIVITY_COLUMNS = [
   { key: "action", label: "Action" },
@@ -36,6 +37,7 @@ const Dashboard = () => {
   if (!isConnected) {
     return (
       <div className="container max-w-4xl mx-auto py-16">
+        <BackButton />
         <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Dashboard</h1>
         <div className="border border-border bg-card"><EmptyState variant="deposits" title="Wallet not connected" description="Connect your wallet to view your positions and balances." /></div>
       </div>
@@ -44,6 +46,7 @@ const Dashboard = () => {
 
   return (
     <div className="container max-w-4xl mx-auto py-16">
+      <BackButton />
       <div className="mb-10">
         <h1 className="text-3xl font-bold uppercase tracking-tight">Dashboard</h1>
         <p className="text-xs text-muted-foreground tracking-wider uppercase mt-1">Lunex Finance | Your Positions</p>
