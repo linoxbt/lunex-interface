@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,11 +8,21 @@ const CORS_HEADERS = {
   "Content-Type": "application/json",
 };
 
-function validateApiKey(req: Request) {
+function getAdminClient() {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+}
+
+async function validateApiKey(req: Request): Promise<{ valid: boolean; key: string; keyId: string | null }> {
   const apiKey = req.headers.get("x-api-key") || "";
-  const validKeys = (Deno.env.get("DEX_API_KEYS") || "").split(",").map(k => k.trim()).filter(Boolean);
-  if (validKeys.length === 0) return { valid: true, key: "anonymous" };
-  return { valid: validKeys.includes(apiKey), key: apiKey };
+  if (!apiKey) return { valid: false, key: "", keyId: null };
+  const db = getAdminClient();
+  const { data } = await db.from("dex_api_keys").select("id").eq("key_value", apiKey).eq("is_active", true).maybeSingle();
+  return { valid: !!data, key: apiKey, keyId: data?.id || null };
+}
+
+async function logUsage(keyId: string | null, endpoint: string, method: string, statusCode: number, rateLimited: boolean) {
+  if (!keyId) return;
+  try { const db = getAdminClient(); await db.from("dex_api_usage").insert({ api_key_id: keyId, endpoint, method, status_code: statusCode, rate_limited: rateLimited }); } catch { /* */ }
 }
 
 // In-memory webhook registry (resets on isolate restart; production would use a database)
@@ -93,7 +104,7 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const auth = validateApiKey(req);
+  const auth = await validateApiKey(req);
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key" }), { status: 401, headers: CORS_HEADERS });
   }
