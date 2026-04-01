@@ -92,7 +92,7 @@ serve(async (req) => {
   if (auth.forbidden) {
     await logUsage(auth.keyId, "/dex-liquidity", req.method, 403, false);
     return new Response(JSON.stringify({ error: "API key not authorized for liquidity service" }), { status: 403, headers: CORS_HEADERS });
-
+  }
   const rl = checkRateLimit(auth.key);
   const rlHeaders = {
     ...CORS_HEADERS,
