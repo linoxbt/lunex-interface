@@ -14,8 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      dex_api_key_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          label: string
+          requested_by: string
+          requested_services: string[]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          requested_by: string
+          requested_services?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          requested_by?: string
+          requested_services?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       dex_api_keys: {
         Row: {
+          allowed_services: string[]
           created_at: string
           created_by: string | null
           id: string
@@ -25,6 +62,7 @@ export type Database = {
           revoked_at: string | null
         }
         Insert: {
+          allowed_services?: string[]
           created_at?: string
           created_by?: string | null
           id?: string
@@ -34,6 +72,7 @@ export type Database = {
           revoked_at?: string | null
         }
         Update: {
+          allowed_services?: string[]
           created_at?: string
           created_by?: string | null
           id?: string
