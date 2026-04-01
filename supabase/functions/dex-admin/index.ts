@@ -10,23 +10,20 @@ const CORS_HEADERS = {
 
 function generateApiKey(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const prefix = "lnx_";
   let key = "";
-  for (let i = 0; i < 32; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return prefix + key;
+  for (let i = 0; i < 32; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
+  return "lnx_" + key;
+}
+
+function json(data: any, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: CORS_HEADERS });
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Missing authorization" }), { status: 401, headers: CORS_HEADERS });
-  }
+  if (!authHeader) return json({ error: "Missing authorization" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -35,20 +32,11 @@ serve(async (req) => {
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
-
   const { data: { user }, error: authError } = await userClient.auth.getUser();
-  if (authError || !user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
-  }
+  if (authError || !user) return json({ error: "Unauthorized" }, 401);
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-  // Check user's role
-  const { data: roles } = await adminClient
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-
+  const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", user.id);
   const userRoles = (roles || []).map((r: any) => r.role);
   const isAdmin = userRoles.includes("admin");
   const isDeveloper = userRoles.includes("developer");
@@ -57,236 +45,228 @@ serve(async (req) => {
   const action = url.searchParams.get("action");
 
   try {
-    // === DEVELOPER ENDPOINTS (developer or admin) ===
+    // ========== DEVELOPER + ADMIN ENDPOINTS ==========
 
-    // MY KEYS - developers see their own keys
+    // MY KEYS
     if (req.method === "GET" && action === "my-keys") {
-      if (!isAdmin && !isDeveloper) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
-      }
-      const { data, error } = await adminClient
-        .from("dex_api_keys")
-        .select("id, key_value, label, is_active, created_at, revoked_at")
-        .eq("created_by", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return new Response(JSON.stringify({ keys: data }), { headers: CORS_HEADERS });
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
+      const { data } = await adminClient.from("dex_api_keys")
+        .select("id, key_value, label, is_active, created_at, revoked_at, allowed_services")
+        .eq("created_by", user.id).order("created_at", { ascending: false });
+      return json({ keys: data });
     }
 
-    // MY USAGE - developers see usage for their own keys
+    // MY USAGE
     if (req.method === "GET" && action === "my-usage") {
-      if (!isAdmin && !isDeveloper) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
-      }
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
       const days = parseInt(url.searchParams.get("days") || "7");
       const since = new Date(Date.now() - days * 86400000).toISOString();
-
-      // Get this user's key IDs
-      const { data: myKeys } = await adminClient
-        .from("dex_api_keys")
-        .select("id")
-        .eq("created_by", user.id);
+      const { data: myKeys } = await adminClient.from("dex_api_keys").select("id").eq("created_by", user.id);
       const keyIds = (myKeys || []).map((k: any) => k.id);
+      if (keyIds.length === 0) return json({ total_requests: 0, rate_limited: 0, by_endpoint: {}, by_status: {}, recent: [] });
+      const { data } = await adminClient.from("dex_api_usage").select("*").in("api_key_id", keyIds).gte("created_at", since).order("created_at", { ascending: false }).limit(1000);
+      return json(buildUsageStats(data));
+    }
 
-      if (keyIds.length === 0) {
-        return new Response(JSON.stringify({ total_requests: 0, rate_limited: 0, by_endpoint: {}, by_status: {}, recent: [] }), { headers: CORS_HEADERS });
-      }
+    // MY REQUESTS (developer sees their own)
+    if (req.method === "GET" && action === "my-requests") {
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
+      const { data } = await adminClient.from("dex_api_key_requests")
+        .select("*").eq("requested_by", user.id).order("created_at", { ascending: false });
+      return json({ requests: data });
+    }
 
-      const { data, error } = await adminClient
-        .from("dex_api_usage")
-        .select("*")
-        .in("api_key_id", keyIds)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(1000);
+    // SUBMIT REQUEST (developer/user submits a key request)
+    if (req.method === "POST" && action === "submit-request") {
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden: need developer role" }, 403);
+      const body = await req.json();
+      const { label, requested_services } = body;
+      if (!label || !requested_services?.length) return json({ error: "label and requested_services required" }, 400);
+      const { data, error } = await adminClient.from("dex_api_key_requests")
+        .insert({ requested_by: user.id, label, requested_services }).select().single();
       if (error) throw error;
-
-      const total = data?.length || 0;
-      const rateLimited = data?.filter((r: any) => r.rate_limited).length || 0;
-      const byEndpoint: Record<string, number> = {};
-      const byStatus: Record<number, number> = {};
-      for (const row of data || []) {
-        byEndpoint[row.endpoint] = (byEndpoint[row.endpoint] || 0) + 1;
-        byStatus[row.status_code] = (byStatus[row.status_code] || 0) + 1;
-      }
-
-      return new Response(JSON.stringify({ total_requests: total, rate_limited: rateLimited, by_endpoint: byEndpoint, by_status: byStatus, recent: (data || []).slice(0, 50) }), { headers: CORS_HEADERS });
+      return json({ request: data }, 201);
     }
 
-    // === ADMIN-ONLY ENDPOINTS ===
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), { status: 403, headers: CORS_HEADERS });
+    // DEV KEY MANAGEMENT (pause/resume/delete own keys)
+    if (req.method === "PUT" && action === "dev-revoke") {
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
+      const { id } = await req.json();
+      const { error } = await adminClient.from("dex_api_keys")
+        .update({ is_active: false, revoked_at: new Date().toISOString() })
+        .eq("id", id).eq("created_by", user.id);
+      if (error) throw error;
+      return json({ success: true });
+    }
+    if (req.method === "PUT" && action === "dev-reactivate") {
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
+      const { id } = await req.json();
+      const { error } = await adminClient.from("dex_api_keys")
+        .update({ is_active: true, revoked_at: null })
+        .eq("id", id).eq("created_by", user.id);
+      if (error) throw error;
+      return json({ success: true });
+    }
+    if (req.method === "DELETE" && action === "dev-delete") {
+      if (!isAdmin && !isDeveloper) return json({ error: "Forbidden" }, 403);
+      const id = url.searchParams.get("id");
+      const { error } = await adminClient.from("dex_api_keys").delete().eq("id", id).eq("created_by", user.id);
+      if (error) throw error;
+      return json({ success: true });
     }
 
-    // LIST all keys (admin)
+    // ========== ADMIN-ONLY ENDPOINTS ==========
+    if (!isAdmin) return json({ error: "Forbidden: admin role required" }, 403);
+
+    // LIST all keys
     if (req.method === "GET" && action === "list") {
-      const { data, error } = await adminClient
-        .from("dex_api_keys")
-        .select("id, key_value, label, is_active, created_at, revoked_at, created_by")
+      const { data } = await adminClient.from("dex_api_keys")
+        .select("id, key_value, label, is_active, created_at, revoked_at, created_by, allowed_services")
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return new Response(JSON.stringify({ keys: data }), { headers: CORS_HEADERS });
+      return json({ keys: data });
     }
 
-    // USAGE analytics (admin)
+    // USAGE analytics
     if (req.method === "GET" && action === "usage") {
       const keyId = url.searchParams.get("key_id");
       const days = parseInt(url.searchParams.get("days") || "7");
       const since = new Date(Date.now() - days * 86400000).toISOString();
-
-      let query = adminClient
-        .from("dex_api_usage")
-        .select("*")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false });
-
+      let query = adminClient.from("dex_api_usage").select("*").gte("created_at", since).order("created_at", { ascending: false });
       if (keyId) query = query.eq("api_key_id", keyId);
-
-      const { data, error } = await query.limit(1000);
-      if (error) throw error;
-
-      const total = data?.length || 0;
-      const rateLimited = data?.filter((r: any) => r.rate_limited).length || 0;
-      const byEndpoint: Record<string, number> = {};
-      const byStatus: Record<number, number> = {};
-      for (const row of data || []) {
-        byEndpoint[row.endpoint] = (byEndpoint[row.endpoint] || 0) + 1;
-        byStatus[row.status_code] = (byStatus[row.status_code] || 0) + 1;
-      }
-
-      return new Response(JSON.stringify({
-        total_requests: total,
-        rate_limited: rateLimited,
-        by_endpoint: byEndpoint,
-        by_status: byStatus,
-        recent: (data || []).slice(0, 50),
-      }), { headers: CORS_HEADERS });
+      const { data } = await query.limit(1000);
+      return json(buildUsageStats(data));
     }
 
-    // LIST all users with profiles and roles (admin)
+    // LIST all users
     if (req.method === "GET" && action === "users") {
-      const { data: profiles, error } = await adminClient
-        .from("profiles")
-        .select("id, email, display_name, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const { data: allRoles } = await adminClient
-        .from("user_roles")
-        .select("user_id, role");
-
+      const { data: profiles } = await adminClient.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false });
+      const { data: allRoles } = await adminClient.from("user_roles").select("user_id, role");
       const roleMap: Record<string, string[]> = {};
-      for (const r of allRoles || []) {
-        if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
-        roleMap[r.user_id].push(r.role);
-      }
+      for (const r of allRoles || []) { if (!roleMap[r.user_id]) roleMap[r.user_id] = []; roleMap[r.user_id].push(r.role); }
+      const users = (profiles || []).map((p: any) => ({ ...p, roles: roleMap[p.id] || [] }));
+      return json({ users });
+    }
 
-      const users = (profiles || []).map((p: any) => ({
-        ...p,
-        roles: roleMap[p.id] || [],
+    // LIST all key requests (admin)
+    if (req.method === "GET" && action === "list-requests") {
+      const { data } = await adminClient.from("dex_api_key_requests").select("*").order("created_at", { ascending: false });
+      // Enrich with requester info
+      const userIds = [...new Set((data || []).map((r: any) => r.requested_by))];
+      const { data: profiles } = await adminClient.from("profiles").select("id, email, display_name").in("id", userIds);
+      const profileMap: Record<string, any> = {};
+      for (const p of profiles || []) profileMap[p.id] = p;
+      const enriched = (data || []).map((r: any) => ({
+        ...r,
+        requester_email: profileMap[r.requested_by]?.email,
+        requester_name: profileMap[r.requested_by]?.display_name,
       }));
-
-      return new Response(JSON.stringify({ users }), { headers: CORS_HEADERS });
+      return json({ requests: enriched });
     }
 
-    // ASSIGN role (admin)
-    if (req.method === "POST" && action === "assign-role") {
+    // HANDLE REQUEST (approve/deny)
+    if (req.method === "POST" && action === "handle-request") {
       const body = await req.json();
-      const { user_id, role } = body;
-      if (!user_id || !role) {
-        return new Response(JSON.stringify({ error: "user_id and role required" }), { status: 400, headers: CORS_HEADERS });
+      const { request_id, action: reqAction, admin_note } = body;
+      if (!request_id || !reqAction) return json({ error: "request_id and action required" }, 400);
+      if (!["approve", "deny"].includes(reqAction)) return json({ error: "action must be approve or deny" }, 400);
+
+      // Get the request
+      const { data: reqData, error: reqErr } = await adminClient.from("dex_api_key_requests")
+        .select("*").eq("id", request_id).single();
+      if (reqErr || !reqData) return json({ error: "Request not found" }, 404);
+      if (reqData.status !== "pending") return json({ error: "Request already processed" }, 400);
+
+      if (reqAction === "approve") {
+        // Generate key and assign to requester
+        const keyValue = generateApiKey();
+        await adminClient.from("dex_api_keys").insert({
+          key_value: keyValue,
+          label: reqData.label,
+          created_by: reqData.requested_by,
+          allowed_services: reqData.requested_services,
+        });
       }
-      const validRoles = ["admin", "developer", "user"];
-      if (!validRoles.includes(role)) {
-        return new Response(JSON.stringify({ error: `Invalid role. Must be one of: ${validRoles.join(", ")}` }), { status: 400, headers: CORS_HEADERS });
-      }
-      const { error } = await adminClient
-        .from("user_roles")
-        .insert({ user_id, role })
-        .select();
-      if (error) {
-        if (error.code === "23505") {
-          return new Response(JSON.stringify({ error: "User already has this role" }), { status: 409, headers: CORS_HEADERS });
-        }
-        throw error;
-      }
-      return new Response(JSON.stringify({ success: true }), { status: 201, headers: CORS_HEADERS });
+
+      await adminClient.from("dex_api_key_requests").update({
+        status: reqAction === "approve" ? "approved" : "denied",
+        admin_note: admin_note || null,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      }).eq("id", request_id);
+
+      return json({ success: true });
     }
 
-    // REMOVE role (admin)
+    // ASSIGN role
+    if (req.method === "POST" && action === "assign-role") {
+      const { user_id, role } = await req.json();
+      if (!user_id || !role) return json({ error: "user_id and role required" }, 400);
+      if (!["admin", "developer", "user"].includes(role)) return json({ error: "Invalid role" }, 400);
+      const { error } = await adminClient.from("user_roles").insert({ user_id, role }).select();
+      if (error?.code === "23505") return json({ error: "User already has this role" }, 409);
+      if (error) throw error;
+      return json({ success: true }, 201);
+    }
+
+    // REMOVE role
     if (req.method === "DELETE" && action === "remove-role") {
       const userId = url.searchParams.get("user_id");
       const role = url.searchParams.get("role");
-      if (!userId || !role) {
-        return new Response(JSON.stringify({ error: "user_id and role required" }), { status: 400, headers: CORS_HEADERS });
-      }
-      // Prevent removing your own admin role
-      if (userId === user.id && role === "admin") {
-        return new Response(JSON.stringify({ error: "Cannot remove your own admin role" }), { status: 400, headers: CORS_HEADERS });
-      }
-      const { error } = await adminClient
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", role);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { headers: CORS_HEADERS });
+      if (!userId || !role) return json({ error: "user_id and role required" }, 400);
+      if (userId === user.id && role === "admin") return json({ error: "Cannot remove your own admin role" }, 400);
+      await adminClient.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+      return json({ success: true });
     }
 
-    // CREATE key
+    // CREATE key (admin direct)
     if (req.method === "POST" && action === "create") {
       const body = await req.json();
       const label = body.label || "Unnamed Key";
       const createdBy = body.created_by || user.id;
+      const allowedServices = body.allowed_services || [];
       const keyValue = generateApiKey();
-
-      const { data, error } = await adminClient
-        .from("dex_api_keys")
-        .insert({ key_value: keyValue, label, created_by: createdBy })
-        .select()
-        .single();
-
+      const { data, error } = await adminClient.from("dex_api_keys")
+        .insert({ key_value: keyValue, label, created_by: createdBy, allowed_services: allowedServices })
+        .select().single();
       if (error) throw error;
-      return new Response(JSON.stringify({ key: data }), { status: 201, headers: CORS_HEADERS });
+      return json({ key: data }, 201);
     }
 
     // REVOKE key
     if (req.method === "PUT" && action === "revoke") {
-      const body = await req.json();
-      const { id } = body;
-      const { error } = await adminClient
-        .from("dex_api_keys")
-        .update({ is_active: false, revoked_at: new Date().toISOString() })
-        .eq("id", id);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { headers: CORS_HEADERS });
+      const { id } = await req.json();
+      await adminClient.from("dex_api_keys").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("id", id);
+      return json({ success: true });
     }
 
     // REACTIVATE key
     if (req.method === "PUT" && action === "reactivate") {
-      const body = await req.json();
-      const { id } = body;
-      const { error } = await adminClient
-        .from("dex_api_keys")
-        .update({ is_active: true, revoked_at: null })
-        .eq("id", id);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { headers: CORS_HEADERS });
+      const { id } = await req.json();
+      await adminClient.from("dex_api_keys").update({ is_active: true, revoked_at: null }).eq("id", id);
+      return json({ success: true });
     }
 
-    // DELETE key permanently
+    // DELETE key
     if (req.method === "DELETE" && action === "delete-key") {
       const id = url.searchParams.get("id");
-      const { error } = await adminClient
-        .from("dex_api_keys")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { headers: CORS_HEADERS });
+      await adminClient.from("dex_api_keys").delete().eq("id", id);
+      return json({ success: true });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400, headers: CORS_HEADERS });
+    return json({ error: "Invalid action" }, 400);
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: CORS_HEADERS });
+    return json({ error: (err as Error).message }, 500);
   }
 });
+
+function buildUsageStats(data: any[] | null) {
+  const total = data?.length || 0;
+  const rateLimited = data?.filter((r: any) => r.rate_limited).length || 0;
+  const byEndpoint: Record<string, number> = {};
+  const byStatus: Record<number, number> = {};
+  for (const row of data || []) {
+    byEndpoint[row.endpoint] = (byEndpoint[row.endpoint] || 0) + 1;
+    byStatus[row.status_code] = (byStatus[row.status_code] || 0) + 1;
+  }
+  return { total_requests: total, rate_limited: rateLimited, by_endpoint: byEndpoint, by_status: byStatus, recent: (data || []).slice(0, 50) };
+}

@@ -3,8 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Key, BarChart3, Plus, Copy, Check, ShieldOff, Shield, Trash2, LogOut, Users, UserPlus, X } from "lucide-react";
+import {
+  Loader2, Key, BarChart3, Plus, Copy, Check, ShieldOff, Shield,
+  Trash2, LogOut, Users, UserPlus, X, BookOpen, Inbox, CheckCircle2, XCircle,
+} from "lucide-react";
 import BackButton from "@/components/BackButton";
+import SDKDeveloperGuide, { AVAILABLE_SERVICES } from "@/components/SDKDeveloperGuide";
 
 interface ApiKey {
   id: string;
@@ -14,6 +18,7 @@ interface ApiKey {
   created_at: string;
   revoked_at: string | null;
   created_by?: string;
+  allowed_services?: string[];
 }
 
 interface UsageStats {
@@ -32,21 +37,33 @@ interface UserProfile {
   roles: string[];
 }
 
+interface KeyRequest {
+  id: string;
+  requested_by: string;
+  label: string;
+  requested_services: string[];
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+  requester_email?: string;
+  requester_name?: string;
+}
+
 const ROLE_INFO: Record<string, { label: string; color: string; description: string }> = {
   admin: {
     label: "Admin",
     color: "bg-red-500/10 text-red-500",
-    description: "Full access. Can manage all API keys, view all usage analytics, assign/remove roles for any user, and access the complete admin dashboard.",
+    description: "Full access. Manages all API keys, usage analytics, user roles, and key requests. Can approve or deny API key requests from developers.",
   },
   developer: {
     label: "Developer",
     color: "bg-blue-500/10 text-blue-500",
-    description: "API consumer. Can view and monitor their own API keys and usage analytics (request counts, endpoint distribution, rate-limit hits). Cannot manage other users or view system-wide data.",
+    description: "SDK integrator. Can request API keys with specific service scopes, view their own keys and usage analytics. Cannot manage other users.",
   },
   user: {
     label: "User",
     color: "bg-muted text-muted-foreground",
-    description: "Basic account. Can log in and access their profile. No access to API keys or analytics. This is the default role for new sign-ups before being granted higher access.",
+    description: "Basic account. Can log in and view profile. No API key or analytics access. Default role for new sign-ups before being granted higher access.",
   },
 };
 
@@ -56,20 +73,22 @@ const AdminDashboard = () => {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState("");
+  const [newServices, setNewServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"keys" | "analytics" | "users">("keys");
+  const [tab, setTab] = useState<"keys" | "analytics" | "users" | "requests" | "docs">("keys");
   const [days, setDays] = useState(7);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [roleAssigning, setRoleAssigning] = useState<string | null>(null);
+  const [requests, setRequests] = useState<KeyRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   const callAdmin = useCallback(async (action: string, method: string, body?: any, params?: Record<string, string>) => {
     const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dex-admin`);
     url.searchParams.set("action", action);
     if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-
     const res = await fetch(url.toString(), {
       method,
       headers: {
@@ -102,33 +121,35 @@ const AdminDashboard = () => {
     setUsersLoading(false);
   }, [callAdmin]);
 
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    const data = await callAdmin("list-requests", "GET");
+    setRequests(data.requests || []);
+    setRequestsLoading(false);
+  }, [callAdmin]);
+
   useEffect(() => { loadKeys(); }, [loadKeys]);
   useEffect(() => { if (tab === "analytics") loadUsage(); }, [tab, loadUsage]);
   useEffect(() => { if (tab === "users") loadUsers(); }, [tab, loadUsers]);
+  useEffect(() => { if (tab === "requests") loadRequests(); }, [tab, loadRequests]);
+
+  const toggleService = (id: string) => {
+    setNewServices(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  };
 
   const createKey = async () => {
-    if (!newLabel.trim()) return;
+    if (!newLabel.trim() || newServices.length === 0) return;
     setCreating(true);
-    await callAdmin("create", "POST", { label: newLabel });
+    await callAdmin("create", "POST", { label: newLabel, allowed_services: newServices });
     setNewLabel("");
+    setNewServices([]);
     await loadKeys();
     setCreating(false);
   };
 
-  const revokeKey = async (id: string) => {
-    await callAdmin("revoke", "PUT", { id });
-    await loadKeys();
-  };
-
-  const reactivateKey = async (id: string) => {
-    await callAdmin("reactivate", "PUT", { id });
-    await loadKeys();
-  };
-
-  const deleteKey = async (id: string) => {
-    await callAdmin("delete-key", "DELETE", undefined, { id });
-    await loadKeys();
-  };
+  const revokeKey = async (id: string) => { await callAdmin("revoke", "PUT", { id }); await loadKeys(); };
+  const reactivateKey = async (id: string) => { await callAdmin("reactivate", "PUT", { id }); await loadKeys(); };
+  const deleteKey = async (id: string) => { await callAdmin("delete-key", "DELETE", undefined, { id }); await loadKeys(); };
 
   const copyKey = (id: string, value: string) => {
     navigator.clipboard.writeText(value);
@@ -150,16 +171,21 @@ const AdminDashboard = () => {
     setRoleAssigning(null);
   };
 
+  const handleRequest = async (requestId: string, action: "approve" | "deny", note?: string) => {
+    await callAdmin("handle-request", "POST", { request_id: requestId, action, admin_note: note });
+    await loadRequests();
+    if (action === "approve") await loadKeys();
+  };
+
+  const pendingCount = requests.filter(r => r.status === "pending").length;
+
   if (!isAdmin) {
     return (
       <div className="container max-w-md mx-auto py-16">
         <BackButton />
         <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">Access Denied</h1>
         <p className="text-xs text-muted-foreground mb-4">Your account does not have admin privileges.</p>
-        <p className="text-xs text-muted-foreground mb-4">Logged in as: {user?.email}</p>
-        <Button variant="outline" size="sm" onClick={signOut}>
-          <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign Out
-        </Button>
+        <Button variant="outline" size="sm" onClick={signOut}><LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign Out</Button>
       </div>
     );
   }
@@ -170,31 +196,34 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-tight">Lunex SDK</h1>
-          <p className="text-xs text-muted-foreground tracking-wider uppercase mt-1">API Key Management & Analytics</p>
+          <p className="text-xs text-muted-foreground tracking-wider uppercase mt-1">Admin Dashboard</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-mono">{user?.email}</span>
-          <Button variant="outline" size="sm" onClick={signOut}>
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
+          <Button variant="outline" size="sm" onClick={signOut}><LogOut className="h-3.5 w-3.5" /></Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-px bg-border mb-6">
+      <div className="flex gap-px bg-border mb-6 flex-wrap">
         {([
-          { id: "keys" as const, label: "API Keys", icon: Key },
-          { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
-          { id: "users" as const, label: "Users", icon: Users },
-        ]).map(({ id, label, icon: Icon }) => (
+          { id: "keys" as const, label: "API Keys", icon: Key, badge: 0 },
+          { id: "requests" as const, label: "Requests", icon: Inbox, badge: pendingCount },
+          { id: "analytics" as const, label: "Analytics", icon: BarChart3, badge: 0 },
+          { id: "users" as const, label: "Users", icon: Users, badge: 0 },
+          { id: "docs" as const, label: "Dev Guide", icon: BookOpen, badge: 0 },
+        ]).map(({ id, label, icon: Icon, badge }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold tracking-wider uppercase transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] sm:text-xs font-semibold tracking-wider uppercase transition-colors relative ${
               tab === id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Icon className="h-4 w-4" /> {label}
+            <Icon className="h-3.5 w-3.5" /> {label}
+            {badge > 0 && (
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">{badge}</span>
+            )}
           </button>
         ))}
       </div>
@@ -204,9 +233,27 @@ const AdminDashboard = () => {
         <div className="space-y-4">
           <div className="border border-border bg-card p-4">
             <h3 className="text-xs font-semibold tracking-wider uppercase mb-3">Generate New API Key</h3>
-            <div className="flex gap-2">
-              <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Key label (e.g., Partner Name)" className="flex-1" />
-              <Button onClick={createKey} disabled={creating || !newLabel.trim()} size="sm">
+            <div className="space-y-3">
+              <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Key label (e.g., Partner Name)" />
+              <div>
+                <p className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2">Select Services</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {AVAILABLE_SERVICES.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => toggleService(s.id)}
+                      className={`px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase border transition-colors ${
+                        newServices.includes(s.id)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-card text-muted-foreground border-border hover:border-foreground"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button onClick={createKey} disabled={creating || !newLabel.trim() || newServices.length === 0} size="sm">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
                 Generate
               </Button>
@@ -225,7 +272,7 @@ const AdminDashboard = () => {
               {keys.map((key) => (
                 <div key={key.id} className={`border bg-card p-4 ${key.is_active ? "border-border" : "border-destructive/30 opacity-60"}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {key.is_active ? <Shield className="h-3.5 w-3.5 text-green-500" /> : <ShieldOff className="h-3.5 w-3.5 text-destructive" />}
                       <span className="text-sm font-semibold">{key.label}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 tracking-wider uppercase font-semibold ${key.is_active ? "bg-green-500/10 text-green-500" : "bg-destructive/10 text-destructive"}`}>
@@ -237,24 +284,79 @@ const AdminDashboard = () => {
                         {copiedId === key.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                       </Button>
                       {key.is_active ? (
-                        <Button variant="ghost" size="sm" onClick={() => revokeKey(key.id)} className="h-7 px-2 text-destructive hover:text-destructive">
-                          <ShieldOff className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => revokeKey(key.id)} className="h-7 px-2 text-destructive hover:text-destructive"><ShieldOff className="h-3.5 w-3.5" /></Button>
                       ) : (
-                        <Button variant="ghost" size="sm" onClick={() => reactivateKey(key.id)} className="h-7 px-2 text-green-500 hover:text-green-500">
-                          <Shield className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => reactivateKey(key.id)} className="h-7 px-2 text-green-500 hover:text-green-500"><Shield className="h-3.5 w-3.5" /></Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => deleteKey(key.id)} className="h-7 px-2 text-destructive hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => deleteKey(key.id)} className="h-7 px-2 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
                   <code className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 block overflow-hidden text-ellipsis">{key.key_value}</code>
+                  {key.allowed_services && key.allowed_services.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {key.allowed_services.map(s => (
+                        <span key={s} className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary font-semibold tracking-wider uppercase">{s}</span>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-2 tracking-wider">
                     Created {new Date(key.created_at).toLocaleDateString()}
                     {key.revoked_at && ` · Revoked ${new Date(key.revoked_at).toLocaleDateString()}`}
                   </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Requests Tab */}
+      {tab === "requests" && (
+        <div className="space-y-4">
+          <div className="border border-border bg-card p-4">
+            <h3 className="text-xs font-semibold tracking-wider uppercase mb-1">API Key Requests</h3>
+            <p className="text-[10px] text-muted-foreground">Developers submit requests for API keys. Review and approve or deny below.</p>
+          </div>
+
+          {requestsLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : requests.length === 0 ? (
+            <div className="border border-border bg-card p-8 text-center">
+              <Inbox className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-xs text-muted-foreground tracking-wider uppercase">No API key requests</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {requests.map((req) => (
+                <div key={req.id} className={`border bg-card p-4 ${req.status === "pending" ? "border-primary/30" : "border-border"}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-semibold">{req.label}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{req.requester_email || req.requested_by}</p>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 tracking-wider uppercase font-semibold ${
+                      req.status === "pending" ? "bg-yellow-500/10 text-yellow-500" :
+                      req.status === "approved" ? "bg-green-500/10 text-green-500" :
+                      "bg-destructive/10 text-destructive"
+                    }`}>{req.status}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {req.requested_services.map(s => (
+                      <span key={s} className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary font-semibold tracking-wider uppercase">{s}</span>
+                    ))}
+                  </div>
+                  {req.admin_note && <p className="text-[10px] text-muted-foreground italic mb-2">Note: {req.admin_note}</p>}
+                  <p className="text-[10px] text-muted-foreground tracking-wider mb-3">Requested {new Date(req.created_at).toLocaleDateString()}</p>
+                  {req.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" className="h-7 text-[10px]" onClick={() => handleRequest(req.id, "approve")}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[10px] text-destructive" onClick={() => handleRequest(req.id, "deny")}>
+                        <XCircle className="h-3 w-3 mr-1" /> Deny
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -270,9 +372,7 @@ const AdminDashboard = () => {
               <label className="text-[10px] text-muted-foreground tracking-wider uppercase block mb-1">Time Range</label>
               <div className="flex gap-px bg-border">
                 {[1, 7, 30].map((d) => (
-                  <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 text-xs font-semibold ${days === d ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
-                    {d}d
-                  </button>
+                  <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 text-xs font-semibold ${days === d ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>{d}d</button>
                 ))}
               </div>
             </div>
@@ -285,32 +385,23 @@ const AdminDashboard = () => {
             </div>
             <Button size="sm" variant="outline" onClick={loadUsage} className="mt-4">Refresh</Button>
           </div>
-
           {!usage ? (
             <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
-                <div className="p-4 bg-card">
-                  <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Total Requests</p>
-                  <p className="text-2xl font-bold font-mono">{usage.total_requests}</p>
-                </div>
-                <div className="p-4 bg-card">
-                  <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Rate Limited</p>
-                  <p className="text-2xl font-bold font-mono text-destructive">{usage.rate_limited}</p>
-                </div>
-                <div className="p-4 bg-card">
-                  <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Success Rate</p>
-                  <p className="text-2xl font-bold font-mono text-green-500">
-                    {usage.total_requests > 0 ? ((1 - (usage.by_status["500"] || 0) / usage.total_requests) * 100).toFixed(1) : "100"}%
-                  </p>
-                </div>
-                <div className="p-4 bg-card">
-                  <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Endpoints Used</p>
-                  <p className="text-2xl font-bold font-mono">{Object.keys(usage.by_endpoint).length}</p>
-                </div>
+                {[
+                  { label: "Total Requests", value: usage.total_requests, color: "" },
+                  { label: "Rate Limited", value: usage.rate_limited, color: "text-destructive" },
+                  { label: "Success Rate", value: `${usage.total_requests > 0 ? ((1 - (usage.by_status["500"] || 0) / usage.total_requests) * 100).toFixed(1) : "100"}%`, color: "text-green-500" },
+                  { label: "Endpoints Used", value: Object.keys(usage.by_endpoint).length, color: "" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="p-4 bg-card">
+                    <p className="text-[10px] text-muted-foreground tracking-wider uppercase">{label}</p>
+                    <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
+                  </div>
+                ))}
               </div>
-
               <div className="border border-border bg-card p-4">
                 <h3 className="text-xs font-semibold tracking-wider uppercase mb-3">Requests by Endpoint</h3>
                 {Object.keys(usage.by_endpoint).length === 0 ? (
@@ -332,19 +423,6 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
-
-              <div className="border border-border bg-card p-4">
-                <h3 className="text-xs font-semibold tracking-wider uppercase mb-3">Response Status Codes</h3>
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(usage.by_status).sort(([a], [b]) => Number(a) - Number(b)).map(([status, count]) => (
-                    <div key={status} className="text-center">
-                      <span className={`text-lg font-bold font-mono ${status.startsWith("2") ? "text-green-500" : status.startsWith("4") ? "text-yellow-500" : "text-destructive"}`}>{count}</span>
-                      <p className="text-[10px] text-muted-foreground tracking-wider">{status}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div className="border border-border bg-card p-4">
                 <h3 className="text-xs font-semibold tracking-wider uppercase mb-3">Recent Requests</h3>
                 <div className="overflow-x-auto">
@@ -353,7 +431,6 @@ const AdminDashboard = () => {
                       <tr className="border-b border-border">
                         <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Time</th>
                         <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Endpoint</th>
-                        <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Method</th>
                         <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Status</th>
                       </tr>
                     </thead>
@@ -362,7 +439,6 @@ const AdminDashboard = () => {
                         <tr key={i} className="border-b border-border/50">
                           <td className="py-1.5 font-mono text-muted-foreground">{new Date(r.created_at).toLocaleString()}</td>
                           <td className="py-1.5 font-mono">{r.endpoint}</td>
-                          <td className="py-1.5">{r.method}</td>
                           <td className={`py-1.5 font-mono ${r.status_code < 300 ? "text-green-500" : r.status_code < 500 ? "text-yellow-500" : "text-destructive"}`}>
                             {r.status_code}{r.rate_limited && " (RL)"}
                           </td>
@@ -381,7 +457,6 @@ const AdminDashboard = () => {
       {/* Users Tab */}
       {tab === "users" && (
         <div className="space-y-4">
-          {/* Role descriptions */}
           <div className="border border-border bg-card p-4">
             <h3 className="text-xs font-semibold tracking-wider uppercase mb-3">Role Definitions</h3>
             <div className="space-y-3">
@@ -393,7 +468,6 @@ const AdminDashboard = () => {
               ))}
             </div>
           </div>
-
           {usersLoading ? (
             <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : users.length === 0 ? (
@@ -410,12 +484,8 @@ const AdminDashboard = () => {
                       <p className="text-sm font-semibold">{u.display_name || "No name"}</p>
                       <p className="text-xs text-muted-foreground font-mono">{u.email}</p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground tracking-wider">
-                      Joined {new Date(u.created_at).toLocaleDateString()}
-                    </p>
+                    <p className="text-[10px] text-muted-foreground tracking-wider">Joined {new Date(u.created_at).toLocaleDateString()}</p>
                   </div>
-
-                  {/* Current roles */}
                   <div className="flex flex-wrap items-center gap-1.5 mb-3">
                     {u.roles.length === 0 && <span className="text-[10px] text-muted-foreground italic">No roles assigned</span>}
                     {u.roles.map((role) => {
@@ -425,11 +495,7 @@ const AdminDashboard = () => {
                         <span key={role} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 tracking-wider uppercase font-semibold ${info.color}`}>
                           {info.label}
                           {!isCurrentUser && (
-                            <button
-                              onClick={() => removeRole(u.id, role)}
-                              disabled={roleAssigning === u.id + role}
-                              className="hover:opacity-70"
-                            >
+                            <button onClick={() => removeRole(u.id, role)} disabled={roleAssigning === u.id + role} className="hover:opacity-70">
                               {roleAssigning === u.id + role ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <X className="h-2.5 w-2.5" />}
                             </button>
                           )}
@@ -437,24 +503,13 @@ const AdminDashboard = () => {
                       );
                     })}
                   </div>
-
-                  {/* Add role buttons */}
                   <div className="flex flex-wrap gap-1.5">
-                    {Object.entries(ROLE_INFO)
-                      .filter(([key]) => !u.roles.includes(key))
-                      .map(([key, info]) => (
-                        <Button
-                          key={key}
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-[10px] tracking-wider uppercase px-2"
-                          onClick={() => assignRole(u.id, key)}
-                          disabled={roleAssigning === u.id + key}
-                        >
-                          {roleAssigning === u.id + key ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
-                          + {info.label}
-                        </Button>
-                      ))}
+                    {Object.entries(ROLE_INFO).filter(([key]) => !u.roles.includes(key)).map(([key, info]) => (
+                      <Button key={key} variant="outline" size="sm" className="h-6 text-[10px] tracking-wider uppercase px-2" onClick={() => assignRole(u.id, key)} disabled={roleAssigning === u.id + key}>
+                        {roleAssigning === u.id + key ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <UserPlus className="h-3 w-3 mr-1" />}
+                        + {info.label}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -462,6 +517,9 @@ const AdminDashboard = () => {
           )}
         </div>
       )}
+
+      {/* Developer Guide Tab */}
+      {tab === "docs" && <SDKDeveloperGuide />}
     </div>
   );
 };

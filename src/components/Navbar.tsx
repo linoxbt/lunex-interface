@@ -25,7 +25,7 @@ const Navbar = () => {
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center gap-10">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src={lunexLogo} alt="Lunex Finance" className="h-7 w-7 dark:invert" />
+            <img src={lunexLogo} alt="LUNEX" className="h-7 w-auto" />
             <span className="text-lg font-bold text-foreground tracking-widest uppercase">LUNEX</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
