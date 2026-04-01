@@ -139,11 +139,15 @@ serve(async (req) => {
   }
 
   // ─── Auth check ───
-  const auth = await validateApiKey(req);
+  const auth = await validateApiKey(req, "quote");
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key", hint: "Set x-api-key header" }), {
       status: 401, headers: CORS_HEADERS,
     });
+  }
+  if (auth.forbidden) {
+    await logUsage(auth.keyId, "/dex-quote", req.method, 403, false);
+    return new Response(JSON.stringify({ error: "API key not authorized for quote service" }), { status: 403, headers: CORS_HEADERS });
   }
 
   // ─── Rate limit check ───

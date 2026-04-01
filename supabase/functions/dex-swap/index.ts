@@ -88,11 +88,15 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const auth = await validateApiKey(req);
+  const auth = await validateApiKey(req, "swap");
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key", hint: "Set x-api-key header" }), {
       status: 401, headers: CORS_HEADERS,
     });
+  }
+  if (auth.forbidden) {
+    await logUsage(auth.keyId, "/dex-swap", req.method, 403, false);
+    return new Response(JSON.stringify({ error: "API key not authorized for swap service" }), { status: 403, headers: CORS_HEADERS });
   }
 
   const rl = checkRateLimit(auth.key);
