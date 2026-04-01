@@ -1,21 +1,70 @@
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from "wagmi";
-import { parseUnits, keccak256, decodeEventLog } from "viem";
+import { parseUnits, pad, zeroHash } from "viem";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
   MESSAGE_TRANSMITTER_ABI,
   ERC20_APPROVE_ABI,
-  MESSAGE_SENT_EVENT_ABI,
+  IRIS_API_URL,
   type BridgeChainKey,
 } from "../config/bridgeConfig";
-import { addressToBytes32 } from "../utils/addressUtils";
 import {
   type BridgeTransaction,
   type BridgeStatus,
   saveBridgeTransaction,
 } from "../state/bridgeState";
-import { useAttestation } from "./useAttestation";
+
+/** Poll CCTP V2 attestation API using domain + txHash */
+function useAttestationV2() {
+  const [attestation, setAttestation] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [status, setStatus] = useState<"pending" | "complete" | "error">("pending");
+  const [error, setError] = useState<string | null>(null);
+
+  const startPolling = useCallback(async (domain: number, txHash: string) => {
+    setStatus("pending");
+    setAttestation(null);
+    setMessage(null);
+    setError(null);
+
+    const url = `${IRIS_API_URL}/v2/messages/${domain}?transactionHash=${txHash}`;
+    const maxAttempts = 120;
+    const delayMs = 5000;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10_000);
+        let res: Response;
+        try {
+          res = await fetch(url, { signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.messages?.[0]?.status === "complete" && data.messages[0].attestation) {
+            setAttestation(data.messages[0].attestation);
+            setMessage(data.messages[0].message);
+            setStatus("complete");
+            return { message: data.messages[0].message, attestation: data.messages[0].attestation };
+          }
+        }
+      } catch {
+        // transient error, keep polling
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    setStatus("error");
+    setError("Attestation timeout — you can retry minting later");
+    return null;
+  }, []);
+
+  return { attestation, message, status, error, startPolling };
+}
 
 export function useBridge() {
   const { address, chainId } = useAccount();
@@ -27,9 +76,7 @@ export function useBridge() {
   const [status, setStatus] = useState<BridgeStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const attestation = useAttestation(
-    status === "waiting_attestation" ? bridgeTx?.messageHash : null
-  );
+  const attestationV2 = useAttestationV2();
 
   const updateTx = useCallback((updates: Partial<BridgeTransaction>) => {
     setBridgeTx((prev) => {
@@ -58,7 +105,7 @@ export function useBridge() {
 
       const from = BRIDGE_CHAINS[fromChain];
       const to = BRIDGE_CHAINS[toChain];
-      const parsedAmount = parseUnits(amount, 6); // USDC = 6 decimals
+      const parsedAmount = parseUnits(amount, from.usdcDecimals);
 
       const tx: BridgeTransaction = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -79,7 +126,7 @@ export function useBridge() {
         // Ensure correct chain
         await ensureChain(from.chainId);
 
-        // Step 1: Approve USDC
+        // Step 1: Approve USDC (skip for native USDC on Arc)
         setStatus("approving");
         updateTx({ status: "approving" });
 
@@ -93,53 +140,59 @@ export function useBridge() {
         });
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        // Step 2: Burn via depositForBurn
+        // Step 2: Burn via depositForBurn (CCTP V2 — 7 params)
         setStatus("burning");
         updateTx({ status: "burning" });
 
-        const mintRecipient = addressToBytes32(address);
+        const mintRecipient = pad(address, { size: 32 });
+        // destinationCaller = bytes32(0) means anyone can relay
+        const destinationCaller = zeroHash as `0x${string}`;
+        // maxFee = 0 for standard transfer (no fast transfer fee)
+        const maxFee = 0n;
+        // minFinalityThreshold: 0 = default finality, 1000 = fast
+        const minFinalityThreshold = 2000;
+
         const burnHash = await walletClient.writeContract({
           address: from.tokenMessenger,
           abi: TOKEN_MESSENGER_ABI,
           functionName: "depositForBurn",
-          args: [parsedAmount, to.domain, mintRecipient, from.usdc],
+          args: [parsedAmount, to.domain, mintRecipient, from.usdc, destinationCaller, maxFee, minFinalityThreshold],
           chain: walletClient.chain,
           account: address,
         });
 
-        const burnReceipt = await publicClient.waitForTransactionReceipt({ hash: burnHash });
+        await publicClient.waitForTransactionReceipt({ hash: burnHash });
 
-        // Extract MessageSent event
-        let messageBytes: `0x${string}` | undefined;
-        for (const log of burnReceipt.logs) {
-          try {
-            const decoded: any = decodeEventLog({
-              abi: MESSAGE_SENT_EVENT_ABI,
-              data: log.data,
-              topics: (log as any).topics ?? [],
-            });
-            if (decoded.eventName === "MessageSent") {
-              messageBytes = decoded.args.message as `0x${string}`;
-              break;
-            }
-          } catch {
-            // Not this event, skip
-          }
-        }
-
-        if (!messageBytes) {
-          throw new Error("Failed to extract message from burn transaction");
-        }
-
-        const msgHash = keccak256(messageBytes);
-
+        // Step 3: Poll V2 attestation API using domain + txHash (no manual log parsing needed)
         setStatus("waiting_attestation");
         updateTx({
           status: "waiting_attestation",
           burnTxHash: burnHash,
-          messageBytes: messageBytes,
-          messageHash: msgHash,
         });
+
+        const attResult = await attestationV2.startPolling(from.domain, burnHash);
+        if (!attResult) {
+          throw new Error("Attestation timeout — you can retry minting later from bridge history");
+        }
+
+        // Step 4: Mint on destination
+        await ensureChain(to.chainId);
+        setStatus("minting");
+        updateTx({ status: "minting" });
+
+        const mintHash = await walletClient.writeContract({
+          address: to.messageTransmitter,
+          abi: MESSAGE_TRANSMITTER_ABI,
+          functionName: "receiveMessage",
+          args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
+          chain: walletClient.chain,
+          account: address,
+        });
+
+        await publicClient.waitForTransactionReceipt({ hash: mintHash });
+
+        setStatus("complete");
+        updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
       } catch (err: any) {
         const msg = err?.shortMessage || err?.message || "Bridge failed";
         setStatus("failed");
@@ -147,19 +200,24 @@ export function useBridge() {
         updateTx({ status: "failed", error: msg });
       }
     },
-    [address, walletClient, publicClient, ensureChain, updateTx]
+    [address, walletClient, publicClient, ensureChain, updateTx, attestationV2]
   );
 
   const completeMint = useCallback(async () => {
-    if (!bridgeTx || !walletClient || !publicClient || !attestation.attestation || !bridgeTx.messageBytes) {
-      return;
-    }
+    if (!bridgeTx || !walletClient || !publicClient || !bridgeTx.burnTxHash) return;
 
+    const from = BRIDGE_CHAINS[bridgeTx.fromChain];
     const to = BRIDGE_CHAINS[bridgeTx.toChain];
 
     try {
-      await ensureChain(to.chainId);
+      // Re-poll attestation if needed
+      setStatus("waiting_attestation");
+      const attResult = await attestationV2.startPolling(from.domain, bridgeTx.burnTxHash);
+      if (!attResult) {
+        throw new Error("Attestation not ready yet");
+      }
 
+      await ensureChain(to.chainId);
       setStatus("minting");
       updateTx({ status: "minting" });
 
@@ -167,7 +225,7 @@ export function useBridge() {
         address: to.messageTransmitter,
         abi: MESSAGE_TRANSMITTER_ABI,
         functionName: "receiveMessage",
-        args: [bridgeTx.messageBytes as `0x${string}`, attestation.attestation as `0x${string}`],
+        args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
         chain: walletClient.chain,
         account: address!,
       });
@@ -175,14 +233,14 @@ export function useBridge() {
       await publicClient.waitForTransactionReceipt({ hash: mintHash });
 
       setStatus("complete");
-      updateTx({ status: "complete", mintTxHash: mintHash, attestation: attestation.attestation });
+      updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
     } catch (err: any) {
       const msg = err?.shortMessage || err?.message || "Mint failed";
       setStatus("failed");
       setError(msg);
       updateTx({ status: "failed", error: msg });
     }
-  }, [bridgeTx, walletClient, publicClient, attestation.attestation, ensureChain, updateTx]);
+  }, [bridgeTx, walletClient, publicClient, attestationV2, ensureChain, updateTx, address]);
 
   const reset = useCallback(() => {
     setBridgeTx(null);
@@ -190,7 +248,6 @@ export function useBridge() {
     setError(null);
   }, []);
 
-  // Resume a pending transaction
   const resumeBridge = useCallback((tx: BridgeTransaction) => {
     setBridgeTx(tx);
     setStatus(tx.status);
@@ -201,7 +258,7 @@ export function useBridge() {
     status,
     error,
     bridgeTx,
-    attestation,
+    attestation: attestationV2,
     startBridge,
     completeMint,
     reset,
