@@ -107,10 +107,13 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const auth = await validateApiKey(req);
+  const auth = await validateApiKey(req, "webhook");
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key" }), { status: 401, headers: CORS_HEADERS });
   }
+  if (auth.forbidden) {
+    await logUsage(auth.keyId, "/dex-webhook", req.method, 403, false);
+    return new Response(JSON.stringify({ error: "API key not authorized for webhook service" }), { status: 403, headers: CORS_HEADERS });
 
   // POST: Register a webhook
   if (req.method === "POST") {

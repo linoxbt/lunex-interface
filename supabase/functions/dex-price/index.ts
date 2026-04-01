@@ -71,10 +71,13 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const auth = await validateApiKey(req);
+  const auth = await validateApiKey(req, "price");
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key" }), { status: 401, headers: CORS_HEADERS });
   }
+  if (auth.forbidden) {
+    await logUsage(auth.keyId, "/dex-price", req.method, 403, false);
+    return new Response(JSON.stringify({ error: "API key not authorized for price service" }), { status: 403, headers: CORS_HEADERS });
 
   const rl = checkRateLimit(auth.key);
   const rlHeaders = { ...CORS_HEADERS, "X-RateLimit-Limit": String(RATE_LIMIT), "X-RateLimit-Remaining": String(rl.remaining), "X-RateLimit-Reset": String(Math.ceil(rl.resetAt / 1000)) };

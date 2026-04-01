@@ -85,10 +85,13 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const auth = await validateApiKey(req);
+  const auth = await validateApiKey(req, "liquidity");
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API key" }), { status: 401, headers: CORS_HEADERS });
   }
+  if (auth.forbidden) {
+    await logUsage(auth.keyId, "/dex-liquidity", req.method, 403, false);
+    return new Response(JSON.stringify({ error: "API key not authorized for liquidity service" }), { status: 403, headers: CORS_HEADERS });
 
   const rl = checkRateLimit(auth.key);
   const rlHeaders = {
