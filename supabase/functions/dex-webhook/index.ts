@@ -12,12 +12,15 @@ function getAdminClient() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
-async function validateApiKey(req: Request): Promise<{ valid: boolean; key: string; keyId: string | null }> {
+async function validateApiKey(req: Request, service: string): Promise<{ valid: boolean; key: string; keyId: string | null; forbidden?: boolean }> {
   const apiKey = req.headers.get("x-api-key") || "";
   if (!apiKey) return { valid: false, key: "", keyId: null };
   const db = getAdminClient();
-  const { data } = await db.from("dex_api_keys").select("id").eq("key_value", apiKey).eq("is_active", true).maybeSingle();
-  return { valid: !!data, key: apiKey, keyId: data?.id || null };
+  const { data } = await db.from("dex_api_keys").select("id, allowed_services").eq("key_value", apiKey).eq("is_active", true).maybeSingle();
+  if (!data) return { valid: false, key: apiKey, keyId: null };
+  const services: string[] = data.allowed_services || [];
+  if (services.length > 0 && !services.includes(service)) return { valid: true, key: apiKey, keyId: data.id, forbidden: true };
+  return { valid: true, key: apiKey, keyId: data.id };
 }
 
 async function logUsage(keyId: string | null, endpoint: string, method: string, statusCode: number, rateLimited: boolean) {
