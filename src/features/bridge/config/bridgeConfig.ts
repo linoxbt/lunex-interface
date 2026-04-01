@@ -23,6 +23,7 @@ export interface BridgeChainConfig {
   tokenMessenger: `0x${string}`;
   messageTransmitter: `0x${string}`;
   usdc: `0x${string}`;
+  usdcDecimals: number;
   explorerUrl: string;
 }
 
@@ -35,6 +36,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    usdcDecimals: 6,
     explorerUrl: "https://sepolia.etherscan.io",
   },
   avalanche: {
@@ -45,6 +47,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x5425890298aed601595a70AB815c96711a31Bc65",
+    usdcDecimals: 6,
     explorerUrl: "https://testnet.snowtrace.io",
   },
   arbitrum: {
@@ -55,6 +58,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+    usdcDecimals: 6,
     explorerUrl: "https://sepolia.arbiscan.io",
   },
   base: {
@@ -65,6 +69,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    usdcDecimals: 6,
     explorerUrl: "https://sepolia.basescan.org",
   },
   polygon: {
@@ -75,6 +80,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+    usdcDecimals: 6,
     explorerUrl: "https://amoy.polygonscan.com",
   },
   arc: {
@@ -85,18 +91,20 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x3600000000000000000000000000000000000000",
+    usdcDecimals: 18,
     explorerUrl: "https://testnet.arcscan.app",
   },
 };
 
 export const BRIDGE_CHAIN_KEYS = Object.keys(BRIDGE_CHAINS) as BridgeChainKey[];
 
-export const IRIS_API_URL = "https://iris-api-sandbox.circle.com/v2/attestations";
+// CCTP V2 attestation API
+export const IRIS_API_URL = "https://iris-api-sandbox.circle.com";
 
 export const getExplorerTxUrl = (chain: BridgeChainKey, hash: string) =>
   `${BRIDGE_CHAINS[chain].explorerUrl}/tx/${hash}`;
 
-// ABIs
+// CCTP V2 ABIs — depositForBurn has 7 params in V2
 export const TOKEN_MESSENGER_ABI = [
   {
     name: "depositForBurn",
@@ -107,6 +115,9 @@ export const TOKEN_MESSENGER_ABI = [
       { name: "destinationDomain", type: "uint32" },
       { name: "mintRecipient", type: "bytes32" },
       { name: "burnToken", type: "address" },
+      { name: "destinationCaller", type: "bytes32" },
+      { name: "maxFee", type: "uint256" },
+      { name: "minFinalityThreshold", type: "uint32" },
     ],
     outputs: [{ name: "nonce", type: "uint64" }],
   },
