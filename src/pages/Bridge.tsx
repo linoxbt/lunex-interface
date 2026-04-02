@@ -141,9 +141,9 @@ const Bridge = () => {
             <Button
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
               onClick={handleBridge}
-              disabled={!amount || parseFloat(amount) <= 0}
+              disabled={!amount || parseFloat(amount) <= 0 || insufficientBalance}
             >
-              Bridge USDC
+              {insufficientBalance ? "Insufficient USDC Balance" : "Bridge USDC"}
             </Button>
           )}
         </div>
