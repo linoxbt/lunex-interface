@@ -127,12 +127,20 @@ export function useBridge() {
         await ensureChain(from.chainId);
 
         // Pre-flight: check USDC balance
+        const balanceOfAbi = [{
+          name: "balanceOf",
+          type: "function" as const,
+          stateMutability: "view" as const,
+          inputs: [{ name: "account", type: "address" as const }],
+          outputs: [{ name: "", type: "uint256" as const }],
+        }] as const;
+
         const balance = await publicClient.readContract({
           address: from.usdc,
-          abi: ERC20_APPROVE_ABI,
+          abi: balanceOfAbi,
           functionName: "balanceOf",
           args: [address],
-        }) as bigint;
+        });
 
         if (balance < parsedAmount) {
           throw new Error(
