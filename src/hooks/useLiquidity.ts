@@ -68,6 +68,7 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
 export function useRemoveLiquidity(lpAmountRaw: bigint, lpAmountDisplay: string, mode: "both" | "usdc" | "eurc") {
   const { address, isConnected } = useAccount();
   const lpApproval = useApproveToken(CONTRACTS.LUNEX_LP, CONTRACTS.LUNEX_SWAP_POOL, 18);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
