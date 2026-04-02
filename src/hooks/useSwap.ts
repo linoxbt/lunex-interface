@@ -44,6 +44,7 @@ export function useSwap({ fromSymbol, toSymbol, amount, slippage }: UseSwapParam
   const priceImpact = spotRate > 0 && swapRate > 0 ? ((spotRate - swapRate) / spotRate) * 100 : 0;
 
   const approval = useApproveToken(fromToken.address, CONTRACTS.LUNEX_SWAP_POOL, fromToken.decimals);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: swapTxHash, isPending: isSwapPending, error: swapError, reset: resetSwap } = useWriteContract();
   const { isLoading: isSwapConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: swapTxHash });
