@@ -126,7 +126,21 @@ export function useBridge() {
         // Ensure correct chain
         await ensureChain(from.chainId);
 
-        // Step 1: Approve USDC (skip for native USDC on Arc)
+        // Pre-flight: check USDC balance
+        const balance = await publicClient.readContract({
+          address: from.usdc,
+          abi: ERC20_APPROVE_ABI,
+          functionName: "balanceOf",
+          args: [address],
+        }) as bigint;
+
+        if (balance < parsedAmount) {
+          throw new Error(
+            `Insufficient USDC balance. You have ${(Number(balance) / 10 ** from.usdcDecimals).toFixed(2)} USDC but tried to bridge ${amount} USDC.`
+          );
+        }
+
+        // Step 1: Approve USDC
         setStatus("approving");
         updateTx({ status: "approving" });
 
