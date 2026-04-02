@@ -4,6 +4,7 @@ import { parseUnits } from "viem";
 import { vaultAbi } from "@/config/abis";
 import { CONTRACTS, TOKENS, arcTestnet, getExplorerTxUrl } from "@/config/wagmi";
 import { useApproveToken } from "./useApproveToken";
+import { useVolumeTracker } from "./useVolumeTracker";
 import { toast } from "sonner";
 
 export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
