@@ -32,6 +32,10 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
         description: `Added ${usdcAmount} USDC + ${eurcAmount} EURC`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(usdcAmount || "0") + parseFloat(eurcAmount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "add_liquidity", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, txHash]);
 
