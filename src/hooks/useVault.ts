@@ -12,6 +12,7 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
   const token = TOKENS[tokenSymbol];
   const vaultAddress = tokenSymbol === "USDC" ? CONTRACTS.LUNE_VAULT_USDC : CONTRACTS.LUNE_VAULT_EURC;
   const approval = useApproveToken(token.address, vaultAddress, token.decimals);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
