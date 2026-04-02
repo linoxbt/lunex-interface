@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from "wagmi";
-import { parseUnits, pad, zeroHash } from "viem";
+import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult } from "viem";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
