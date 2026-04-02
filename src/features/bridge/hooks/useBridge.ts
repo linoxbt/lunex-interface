@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from "wagmi";
-import { parseUnits, pad, zeroHash } from "viem";
+import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult } from "viem";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
@@ -126,7 +126,30 @@ export function useBridge() {
         // Ensure correct chain
         await ensureChain(from.chainId);
 
-        // Step 1: Approve USDC (skip for native USDC on Arc)
+        // Pre-flight: check USDC balance
+        const balanceOfAbi = [{
+          name: "balanceOf" as const,
+          type: "function" as const,
+          stateMutability: "view" as const,
+          inputs: [{ name: "account", type: "address" as const }],
+          outputs: [{ name: "", type: "uint256" as const }],
+        }] as const;
+
+        const callData = encodeFunctionData({
+          abi: balanceOfAbi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+        const raw = await publicClient.call({ to: from.usdc, data: callData });
+        const balance = decodeFunctionResult({ abi: balanceOfAbi, functionName: "balanceOf", data: raw.data! }) as bigint;
+
+        if (balance < parsedAmount) {
+          throw new Error(
+            `Insufficient USDC balance. You have ${(Number(balance) / 10 ** from.usdcDecimals).toFixed(2)} USDC but tried to bridge ${amount} USDC.`
+          );
+        }
+
+        // Step 1: Approve USDC
         setStatus("approving");
         updateTx({ status: "approving" });
 

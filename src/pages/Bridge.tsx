@@ -52,8 +52,15 @@ const Bridge = () => {
     }
   };
 
+  const insufficientBalance =
+    !!amount &&
+    parseFloat(amount) > 0 &&
+    sourceBalance !== undefined &&
+    parseFloat(sourceBalance.replace(/,/g, "")) < parseFloat(amount);
+
   const handleBridge = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+    if (insufficientBalance) return;
     bridge.startBridge(amount, fromChain, toChain);
   };
 
@@ -134,9 +141,9 @@ const Bridge = () => {
             <Button
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
               onClick={handleBridge}
-              disabled={!amount || parseFloat(amount) <= 0}
+              disabled={!amount || parseFloat(amount) <= 0 || insufficientBalance}
             >
-              Bridge USDC
+              {insufficientBalance ? "Insufficient USDC Balance" : "Bridge USDC"}
             </Button>
           )}
         </div>
@@ -170,10 +177,15 @@ const Bridge = () => {
         </div>
       )}
 
-      {/* Bridge History */}
-      {!isActive && (
-        <BridgeHistory onResume={(tx) => bridge.resumeBridge(tx)} />
-      )}
+      {/* Bridge History — always visible so users can resume */}
+      <BridgeHistory
+        onResume={(tx) => {
+          bridge.resumeBridge(tx);
+          if (tx.status === "waiting_attestation" || tx.status === "burning") {
+            bridge.completeMint();
+          }
+        }}
+      />
     </div>
   );
 };
