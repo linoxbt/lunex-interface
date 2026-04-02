@@ -21,6 +21,7 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
 
   const usdcApproval = useApproveToken(TOKENS.USDC.address, CONTRACTS.LUNEX_SWAP_POOL, 6);
   const eurcApproval = useApproveToken(TOKENS.EURC.address, CONTRACTS.LUNEX_SWAP_POOL, 6);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
