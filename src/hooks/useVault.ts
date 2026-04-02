@@ -67,6 +67,7 @@ export function useVaultWithdraw(tokenSymbol: "USDC" | "EURC", sharesRaw: bigint
         description: "Redeemed vault shares",
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      recordVolume({ txHash, eventType: "vault_withdraw", amountUsd: 0, contract: vaultAddress });
     }
   }, [isConfirmed, txHash]);
 

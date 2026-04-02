@@ -55,6 +55,10 @@ export function useSwap({ fromSymbol, toSymbol, amount, slippage }: UseSwapParam
         description: `Swapped ${amount} ${fromSymbol} → ${toSymbol}`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(swapTxHash), "_blank") },
       });
+      const amountUsd = parseFloat(amount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash: swapTxHash, eventType: "swap", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, swapTxHash]);
 

@@ -79,6 +79,10 @@ export function useRemoveLiquidity(lpAmountRaw: bigint, lpAmountDisplay: string,
         description: `Removed ${lpAmountDisplay} LP tokens`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(lpAmountDisplay || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "remove_liquidity", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, txHash, lpAmountDisplay]);
 
