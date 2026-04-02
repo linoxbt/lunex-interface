@@ -27,17 +27,19 @@ const ProtocolStats = () => {
   const vaultVolume = stats?.vault_volume_usd ?? 0;
 
   return (
-    <div className="container max-w-3xl mx-auto py-16">
+    <div className="container max-w-3xl mx-auto py-16 px-4">
       <BackButton />
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">Protocol Stats</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">Lunex | Live Onchain Data</p>
 
+      {/* Top stats — responsive: 2 cols on mobile, 5 on desktop. Last item spans full on odd count mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-border mb-6">
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><DollarSign className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">TOTAL TVL</p><p className="text-xl font-bold font-mono">${fmt(totalTvl)}</p></div>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><BarChart3 className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">TOTAL VOLUME</p><p className="text-xl font-bold font-mono">${fmt(totalVolume)}</p></div>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><Droplets className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">POOL LIQUIDITY</p><p className="text-xl font-bold font-mono">${fmt(pool.totalLiquidity)}</p></div>
         <div className="p-5 bg-card"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><Shield className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">USDC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(usdcVault.totalAssets)}</p></div>
-        <div className="p-5 bg-card"><div className="h-8 w-8 bg-secondary/10 flex items-center justify-center mb-3"><Shield className="h-4 w-4 text-secondary" /></div><p className="text-xs text-muted-foreground tracking-wider">EURC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(eurcVault.totalAssets)}</p></div>
+        {/* Last item spans full width on mobile to avoid blank square */}
+        <div className="p-5 bg-card col-span-2 lg:col-span-1"><div className="h-8 w-8 bg-primary/10 flex items-center justify-center mb-3"><Shield className="h-4 w-4 text-primary" /></div><p className="text-xs text-muted-foreground tracking-wider">EURC VAULT TVL</p><p className="text-xl font-bold font-mono">${fmt(eurcVault.totalAssets)}</p></div>
       </div>
 
       <div className="border border-border bg-card p-6 mb-4">
