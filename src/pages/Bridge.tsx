@@ -177,10 +177,15 @@ const Bridge = () => {
         </div>
       )}
 
-      {/* Bridge History */}
-      {!isActive && (
-        <BridgeHistory onResume={(tx) => bridge.resumeBridge(tx)} />
-      )}
+      {/* Bridge History — always visible so users can resume */}
+      <BridgeHistory
+        onResume={(tx) => {
+          bridge.resumeBridge(tx);
+          if (tx.status === "waiting_attestation" || tx.status === "burning") {
+            bridge.completeMint();
+          }
+        }}
+      />
     </div>
   );
 };

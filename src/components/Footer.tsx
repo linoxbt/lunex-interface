@@ -19,12 +19,12 @@ const FooterInner = () => {
 
   return (
     <footer className="border-t border-border bg-background py-6">
-      <div className="container flex items-center justify-between text-xs text-muted-foreground tracking-wider">
+      <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground tracking-wider">
         {/* Left */}
         <span className="uppercase">Lunex Finance • Copyright 2026</span>
 
         {/* Center */}
-        <div className="hidden sm:flex items-center gap-4">
+        <div className="flex items-center gap-4">
           <a href="https://x.com/themirrorlabs" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1 uppercase">
             Built by Mirror Labs <ExternalLink className="h-3 w-3" />
           </a>
@@ -44,18 +44,6 @@ const FooterInner = () => {
             <TelegramIcon />
           </a>
         </div>
-      </div>
-
-      {/* Mobile center row */}
-      <div className="sm:hidden container flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground tracking-wider uppercase">
-        <a href="https://x.com/themirrorlabs" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1">
-          Built by Mirror Labs <ExternalLink className="h-3 w-3" />
-        </a>
-        {(isAdmin || isDeveloper) && (
-          <Link to="/lunexsdk" className="hover:text-foreground transition-colors">
-            SDK Portal
-          </Link>
-        )}
       </div>
     </footer>
   );
