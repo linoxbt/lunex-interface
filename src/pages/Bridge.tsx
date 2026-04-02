@@ -52,8 +52,15 @@ const Bridge = () => {
     }
   };
 
+  const insufficientBalance =
+    !!amount &&
+    parseFloat(amount) > 0 &&
+    sourceBalance !== undefined &&
+    parseFloat(sourceBalance.replace(/,/g, "")) < parseFloat(amount);
+
   const handleBridge = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+    if (insufficientBalance) return;
     bridge.startBridge(amount, fromChain, toChain);
   };
 
