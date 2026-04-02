@@ -56,6 +56,7 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
 export function useVaultWithdraw(tokenSymbol: "USDC" | "EURC", sharesRaw: bigint) {
   const { address, isConnected } = useAccount();
   const vaultAddress = tokenSymbol === "USDC" ? CONTRACTS.LUNE_VAULT_USDC : CONTRACTS.LUNE_VAULT_EURC;
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
