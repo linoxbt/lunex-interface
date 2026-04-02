@@ -4,6 +4,7 @@ import { parseUnits, formatUnits } from "viem";
 import { stableSwapAbi } from "@/config/abis";
 import { CONTRACTS, TOKENS, arcTestnet, getExplorerTxUrl } from "@/config/wagmi";
 import { useApproveToken } from "./useApproveToken";
+import { useVolumeTracker } from "./useVolumeTracker";
 import { toast } from "sonner";
 
 export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
