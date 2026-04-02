@@ -4,6 +4,7 @@ import { parseUnits } from "viem";
 import { vaultAbi } from "@/config/abis";
 import { CONTRACTS, TOKENS, arcTestnet, getExplorerTxUrl } from "@/config/wagmi";
 import { useApproveToken } from "./useApproveToken";
+import { useVolumeTracker } from "./useVolumeTracker";
 import { toast } from "sonner";
 
 export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
@@ -11,6 +12,7 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
   const token = TOKENS[tokenSymbol];
   const vaultAddress = tokenSymbol === "USDC" ? CONTRACTS.LUNE_VAULT_USDC : CONTRACTS.LUNE_VAULT_EURC;
   const approval = useApproveToken(token.address, vaultAddress, token.decimals);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -21,6 +23,10 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
         description: `Deposited ${amount} ${tokenSymbol}`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(amount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "vault_deposit", amountUsd, contract: vaultAddress });
+      }
     }
   }, [isConfirmed, txHash]);
 
@@ -50,6 +56,7 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
 export function useVaultWithdraw(tokenSymbol: "USDC" | "EURC", sharesRaw: bigint) {
   const { address, isConnected } = useAccount();
   const vaultAddress = tokenSymbol === "USDC" ? CONTRACTS.LUNE_VAULT_USDC : CONTRACTS.LUNE_VAULT_EURC;
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -60,6 +67,7 @@ export function useVaultWithdraw(tokenSymbol: "USDC" | "EURC", sharesRaw: bigint
         description: "Redeemed vault shares",
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      recordVolume({ txHash, eventType: "vault_withdraw", amountUsd: 0, contract: vaultAddress });
     }
   }, [isConfirmed, txHash]);
 

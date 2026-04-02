@@ -4,6 +4,7 @@ import { parseUnits, formatUnits } from "viem";
 import { stableSwapAbi } from "@/config/abis";
 import { CONTRACTS, TOKEN_INDEX, TOKENS, arcTestnet, getExplorerTxUrl } from "@/config/wagmi";
 import { useApproveToken } from "./useApproveToken";
+import { useVolumeTracker } from "./useVolumeTracker";
 import { toast } from "sonner";
 
 interface UseSwapParams {
@@ -43,6 +44,7 @@ export function useSwap({ fromSymbol, toSymbol, amount, slippage }: UseSwapParam
   const priceImpact = spotRate > 0 && swapRate > 0 ? ((spotRate - swapRate) / spotRate) * 100 : 0;
 
   const approval = useApproveToken(fromToken.address, CONTRACTS.LUNEX_SWAP_POOL, fromToken.decimals);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: swapTxHash, isPending: isSwapPending, error: swapError, reset: resetSwap } = useWriteContract();
   const { isLoading: isSwapConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: swapTxHash });
@@ -53,6 +55,10 @@ export function useSwap({ fromSymbol, toSymbol, amount, slippage }: UseSwapParam
         description: `Swapped ${amount} ${fromSymbol} → ${toSymbol}`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(swapTxHash), "_blank") },
       });
+      const amountUsd = parseFloat(amount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash: swapTxHash, eventType: "swap", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, swapTxHash]);
 

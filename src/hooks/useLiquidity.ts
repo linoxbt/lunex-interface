@@ -4,6 +4,7 @@ import { parseUnits, formatUnits } from "viem";
 import { stableSwapAbi } from "@/config/abis";
 import { CONTRACTS, TOKENS, arcTestnet, getExplorerTxUrl } from "@/config/wagmi";
 import { useApproveToken } from "./useApproveToken";
+import { useVolumeTracker } from "./useVolumeTracker";
 import { toast } from "sonner";
 
 export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
@@ -20,6 +21,7 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
 
   const usdcApproval = useApproveToken(TOKENS.USDC.address, CONTRACTS.LUNEX_SWAP_POOL, 6);
   const eurcApproval = useApproveToken(TOKENS.EURC.address, CONTRACTS.LUNEX_SWAP_POOL, 6);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -30,6 +32,10 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
         description: `Added ${usdcAmount} USDC + ${eurcAmount} EURC`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(usdcAmount || "0") + parseFloat(eurcAmount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "add_liquidity", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, txHash]);
 
@@ -62,6 +68,7 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
 export function useRemoveLiquidity(lpAmountRaw: bigint, lpAmountDisplay: string, mode: "both" | "usdc" | "eurc") {
   const { address, isConnected } = useAccount();
   const lpApproval = useApproveToken(CONTRACTS.LUNEX_LP, CONTRACTS.LUNEX_SWAP_POOL, 18);
+  const { recordVolume } = useVolumeTracker();
 
   const { writeContract, data: txHash, isPending: isActionPending, error, reset } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -72,6 +79,10 @@ export function useRemoveLiquidity(lpAmountRaw: bigint, lpAmountDisplay: string,
         description: `Removed ${lpAmountDisplay} LP tokens`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(lpAmountDisplay || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "remove_liquidity", amountUsd, contract: CONTRACTS.LUNEX_SWAP_POOL });
+      }
     }
   }, [isConfirmed, txHash, lpAmountDisplay]);
 

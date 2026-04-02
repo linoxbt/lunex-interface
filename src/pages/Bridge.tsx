@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Wallet } from "lucide-react";
+import { Loader2, Wallet, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAccount } from "wagmi";
@@ -25,10 +25,10 @@ const Bridge = () => {
   const { formatted: sourceBalance, isLoading: balanceLoading } =
     useBridgeBalance(fromChain);
 
-  // Check for resumable transactions on mount
+  // Auto-resume pending transactions on mount
   useEffect(() => {
     const pending = getPendingBridgeTransactions();
-    if (pending.length > 0) {
+    if (pending.length > 0 && bridge.status === "idle") {
       bridge.resumeBridge(pending[0]);
     }
   }, []);
@@ -40,16 +40,12 @@ const Bridge = () => {
 
   const handleFromChange = (chain: BridgeChainKey) => {
     setFromChain(chain);
-    if (chain === toChain) {
-      setToChain(fromChain);
-    }
+    if (chain === toChain) setToChain(fromChain);
   };
 
   const handleToChange = (chain: BridgeChainKey) => {
     setToChain(chain);
-    if (chain === fromChain) {
-      setFromChain(toChain);
-    }
+    if (chain === fromChain) setFromChain(toChain);
   };
 
   const insufficientBalance =
@@ -70,6 +66,9 @@ const Bridge = () => {
     bridge.status === "burning" ||
     bridge.status === "minting";
 
+  // CCTP is 1:1 for USDC, no fee
+  const receiveAmount = amount && parseFloat(amount) > 0 ? parseFloat(amount).toFixed(2) : "";
+
   return (
     <div className="container max-w-lg mx-auto py-16 px-4">
       <BackButton />
@@ -78,91 +77,112 @@ const Bridge = () => {
         Bridge USDC across chains via Circle CCTP
       </p>
 
-      {/* Bridge form */}
-      {!isActive && (
-        <div className="border border-border bg-card p-6 space-y-6">
-          <ChainSelector
-            fromChain={fromChain}
-            toChain={toChain}
-            onFromChange={handleFromChange}
-            onToChange={handleToChange}
-            onSwap={handleSwapChains}
-          />
-
-          {/* Balance display */}
-          {isConnected && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 border border-border">
-              <Wallet className="h-3.5 w-3.5" />
-              <span>Balance:</span>
-              {balanceLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <span className="font-mono text-foreground font-semibold">
-                  {sourceBalance} USDC
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-              Amount (USDC)
-            </label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-background border-border text-lg font-mono h-12"
-              min="0"
-              step="0.01"
-            />
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-2 text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Bridge Fee</span>
-              <span className="text-foreground">Free (CCTP)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Estimated Time</span>
-              <span className="text-foreground">5-20 min</span>
-            </div>
-          </div>
-
-          {!isConnected ? (
-            <Button
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
-              onClick={openConnectModal}
-            >
-              Connect Wallet
-            </Button>
-          ) : (
-            <Button
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
-              onClick={handleBridge}
-              disabled={!amount || parseFloat(amount) <= 0 || insufficientBalance}
-            >
-              {insufficientBalance ? "Insufficient USDC Balance" : "Bridge USDC"}
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Progress UI */}
-      {isActive && bridge.bridgeTx && (
-        <BridgeProgress
-          status={bridge.status}
-          burnTxHash={bridge.bridgeTx.burnTxHash}
-          mintTxHash={bridge.bridgeTx.mintTxHash}
-          fromChain={bridge.bridgeTx.fromChain}
-          toChain={bridge.bridgeTx.toChain}
-          error={bridge.error}
-          onRetry={() => bridge.startBridge(amount, fromChain, toChain)}
-          onReset={bridge.reset}
-          onMint={bridge.completeMint}
-          attestationReady={bridge.attestation.status === "complete"}
+      {/* Bridge form — always show so user can start new bridges */}
+      <div className="border border-border bg-card p-6 space-y-6">
+        <ChainSelector
+          fromChain={fromChain}
+          toChain={toChain}
+          onFromChange={handleFromChange}
+          onToChange={handleToChange}
+          onSwap={handleSwapChains}
         />
+
+        {/* Balance display */}
+        {isConnected && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 border border-border">
+            <Wallet className="h-3.5 w-3.5" />
+            <span>Balance:</span>
+            {balanceLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <span className="font-mono text-foreground font-semibold">
+                {sourceBalance} USDC
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+            Amount (USDC)
+          </label>
+          <Input
+            type="number"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="bg-background border-border text-lg font-mono h-12"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        {/* Receive amount */}
+        {receiveAmount && (
+          <div className="flex items-center gap-3 p-3 border border-border bg-muted/30">
+            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">You Receive</p>
+              <p className="text-lg font-bold font-mono text-foreground">{receiveAmount} USDC</p>
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-border pt-4 space-y-2 text-xs text-muted-foreground">
+          <div className="flex justify-between">
+            <span>Bridge Fee</span>
+            <span className="text-foreground">Free (CCTP)</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Exchange Rate</span>
+            <span className="text-foreground">1:1</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Estimated Time</span>
+            <span className="text-foreground">5-20 min</span>
+          </div>
+        </div>
+
+        {!isConnected ? (
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
+            onClick={openConnectModal}
+          >
+            Connect Wallet
+          </Button>
+        ) : (
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
+            onClick={handleBridge}
+            disabled={!amount || parseFloat(amount) <= 0 || insufficientBalance || isProcessing}
+          >
+            {isProcessing ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Bridging...</>
+            ) : insufficientBalance ? (
+              "Insufficient USDC Balance"
+            ) : (
+              "Bridge USDC"
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* Progress UI — shown inline when active */}
+      {isActive && bridge.bridgeTx && (
+        <div className="mt-4">
+          <BridgeProgress
+            status={bridge.status}
+            burnTxHash={bridge.bridgeTx.burnTxHash}
+            mintTxHash={bridge.bridgeTx.mintTxHash}
+            fromChain={bridge.bridgeTx.fromChain}
+            toChain={bridge.bridgeTx.toChain}
+            error={bridge.error}
+            onRetry={() => bridge.startBridge(amount, fromChain, toChain)}
+            onReset={bridge.reset}
+            onMint={bridge.completeMint}
+            attestationReady={bridge.attestation.status === "complete"}
+          />
+        </div>
       )}
 
       {/* Processing overlay */}
