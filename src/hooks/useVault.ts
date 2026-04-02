@@ -23,6 +23,10 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
         description: `Deposited ${amount} ${tokenSymbol}`,
         action: { label: "View on ArcScan →", onClick: () => window.open(getExplorerTxUrl(txHash), "_blank") },
       });
+      const amountUsd = parseFloat(amount || "0");
+      if (amountUsd > 0) {
+        recordVolume({ txHash, eventType: "vault_deposit", amountUsd, contract: vaultAddress });
+      }
     }
   }, [isConfirmed, txHash]);
 
