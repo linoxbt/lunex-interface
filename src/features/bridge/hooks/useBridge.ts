@@ -128,19 +128,20 @@ export function useBridge() {
 
         // Pre-flight: check USDC balance
         const balanceOfAbi = [{
-          name: "balanceOf",
+          name: "balanceOf" as const,
           type: "function" as const,
           stateMutability: "view" as const,
           inputs: [{ name: "account", type: "address" as const }],
           outputs: [{ name: "", type: "uint256" as const }],
         }] as const;
 
-        const balance = await publicClient.readContract({
-          address: from.usdc,
+        const callData = encodeFunctionData({
           abi: balanceOfAbi,
           functionName: "balanceOf",
           args: [address],
         });
+        const raw = await publicClient.call({ to: from.usdc, data: callData });
+        const balance = decodeFunctionResult({ abi: balanceOfAbi, functionName: "balanceOf", data: raw.data! }) as bigint;
 
         if (balance < parsedAmount) {
           throw new Error(
