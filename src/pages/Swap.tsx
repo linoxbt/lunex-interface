@@ -11,6 +11,7 @@ import { TransactionModal, computeTxStage } from "@/components/TransactionModal"
 import { SectionHistory } from "@/components/SectionHistory";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import BackButton from "@/components/BackButton";
+import { hasInsufficientTokenBalance, parseTokenAmount } from "@/lib/tokenAmounts";
 
 const tokenList = Object.values(TOKENS);
 const slippageOptions = ["0.1", "0.5", "1.0"];
@@ -63,11 +64,12 @@ const Swap = () => {
   const flipTokens = () => { setFromToken(toToken); setToToken(fromToken); setFromAmount(""); };
 
   const bal = balances[fromToken.symbol as keyof typeof balances];
-  const hasInsufficientBalance = fromAmount && bal?.balance ? parseFloat(fromAmount) > parseFloat(bal.balance.formatted) : false;
+  const parsedFromAmount = parseTokenAmount(fromAmount, fromToken.decimals);
+  const hasInsufficientBalance = hasInsufficientTokenBalance(fromAmount, bal?.balance);
 
   const getButtonText = () => {
     if (!isConnected) return "CONNECT WALLET";
-    if (!fromAmount) return "ENTER AN AMOUNT";
+    if (!fromAmount || parsedFromAmount <= 0n) return "ENTER AN AMOUNT";
     if (hasInsufficientBalance) return "INSUFFICIENT BALANCE";
     if (swap.isApproving) return "APPROVING...";
     if (swap.isBusy) return "SWAPPING...";
@@ -77,7 +79,7 @@ const Swap = () => {
 
   const handleClick = () => {
     if (!isConnected && openConnectModal) { openConnectModal(); return; }
-    if (fromAmount && !hasInsufficientBalance) swap.executeSwap();
+    if (fromAmount && parsedFromAmount > 0n && !hasInsufficientBalance) swap.executeSwap();
   };
 
   const impactColor = swap.priceImpact < 0.1 ? "text-green" : swap.priceImpact < 1 ? "text-yellow-400" : "text-destructive";
@@ -152,7 +154,7 @@ const Swap = () => {
         </div>
       )}
 
-      <Button className="w-full mt-4 h-12 text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleClick} disabled={swap.isBusy || !!hasInsufficientBalance}>
+      <Button className="w-full mt-4 h-12 text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleClick} disabled={swap.isBusy || hasInsufficientBalance || parsedFromAmount <= 0n}>
         {swap.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         {getButtonText()}
       </Button>

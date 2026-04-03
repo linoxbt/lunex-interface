@@ -29,6 +29,28 @@ interface UsageStats {
   recent: any[];
 }
 
+interface ProtocolOverview {
+  registered_users: number;
+  user_counts: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+    total: number;
+  };
+  volume: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+    total: number;
+  };
+  wallet_addresses: Array<{
+    address: string;
+    interactions: number;
+    last_seen: string | null;
+    source: string;
+  }>;
+}
+
 interface UserProfile {
   id: string;
   email: string;
@@ -72,6 +94,7 @@ const AdminDashboard = () => {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
+  const [overview, setOverview] = useState<ProtocolOverview | null>(null);
   const [newLabel, setNewLabel] = useState("");
   const [newServices, setNewServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +137,11 @@ const AdminDashboard = () => {
     setUsage(data);
   }, [callAdmin, selectedKeyId, days]);
 
+  const loadOverview = useCallback(async () => {
+    const data = await callAdmin("protocol-overview", "GET");
+    setOverview(data);
+  }, [callAdmin]);
+
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     const data = await callAdmin("users", "GET");
@@ -129,7 +157,7 @@ const AdminDashboard = () => {
   }, [callAdmin]);
 
   useEffect(() => { loadKeys(); }, [loadKeys]);
-  useEffect(() => { if (tab === "analytics") loadUsage(); }, [tab, loadUsage]);
+  useEffect(() => { if (tab === "analytics") { loadUsage(); loadOverview(); } }, [tab, loadUsage, loadOverview]);
   useEffect(() => { if (tab === "users") loadUsers(); }, [tab, loadUsers]);
   useEffect(() => { if (tab === "requests") loadRequests(); }, [tab, loadRequests]);
 
@@ -178,6 +206,7 @@ const AdminDashboard = () => {
   };
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
+  const fmtUsd = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (!isAdmin) {
     return (
@@ -367,6 +396,71 @@ const AdminDashboard = () => {
       {/* Analytics Tab */}
       {tab === "analytics" && (
         <div className="space-y-4">
+          {overview && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+                {[
+                  { label: "Active Wallets · 1D", value: overview.user_counts.daily },
+                  { label: "Active Wallets · 7D", value: overview.user_counts.weekly },
+                  { label: "Active Wallets · 30D", value: overview.user_counts.monthly },
+                  { label: "Registered Users", value: overview.registered_users },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-4 bg-card">
+                    <p className="text-[10px] text-muted-foreground tracking-wider uppercase">{label}</p>
+                    <p className="text-2xl font-bold font-mono">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+                {[
+                  { label: "Volume · 1D", value: `$${fmtUsd(overview.volume.daily)}` },
+                  { label: "Volume · 7D", value: `$${fmtUsd(overview.volume.weekly)}` },
+                  { label: "Volume · 30D", value: `$${fmtUsd(overview.volume.monthly)}` },
+                  { label: "Total Volume", value: `$${fmtUsd(overview.volume.total)}` },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-4 bg-card">
+                    <p className="text-[10px] text-muted-foreground tracking-wider uppercase">{label}</p>
+                    <p className="text-2xl font-bold font-mono">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <h3 className="text-xs font-semibold tracking-wider uppercase">Protocol Wallet Activity</h3>
+                    <p className="text-[10px] text-muted-foreground">Wallets seen from stored app activity and onchain Lunex contract interactions.</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={loadOverview}>Refresh</Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Wallet</th>
+                        <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Source</th>
+                        <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Interactions</th>
+                        <th className="text-left py-2 text-muted-foreground tracking-wider uppercase font-semibold">Last Seen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overview.wallet_addresses.map((wallet) => (
+                        <tr key={wallet.address} className="border-b border-border/50">
+                          <td className="py-2 font-mono break-all">{wallet.address}</td>
+                          <td className="py-2 uppercase text-muted-foreground">{wallet.source}</td>
+                          <td className="py-2 font-mono">{wallet.interactions}</td>
+                          <td className="py-2 font-mono text-muted-foreground">{wallet.last_seen ? new Date(wallet.last_seen).toLocaleString() : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {overview.wallet_addresses.length === 0 && <p className="text-center text-muted-foreground py-4 text-xs">No wallet activity found yet</p>}
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="border border-border bg-card p-4 flex flex-wrap gap-3 items-center">
             <div>
               <label className="text-[10px] text-muted-foreground tracking-wider uppercase block mb-1">Time Range</label>

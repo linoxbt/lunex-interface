@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { useAccount, useWalletClient, usePublicClient, useSwitchChain } from "wagmi";
-import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult } from "viem";
+import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
+import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult, createPublicClient, http } from "viem";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
@@ -69,7 +69,6 @@ function useAttestationV2() {
 export function useBridge() {
   const { address, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
   const { switchChainAsync } = useSwitchChain();
 
   const [bridgeTx, setBridgeTx] = useState<BridgeTransaction | null>(null);
@@ -77,6 +76,11 @@ export function useBridge() {
   const [error, setError] = useState<string | null>(null);
 
   const attestationV2 = useAttestationV2();
+
+  const getChainClient = useCallback((chain: BridgeChainKey) => {
+    const config = BRIDGE_CHAINS[chain];
+    return createPublicClient({ transport: http(config.rpcUrl) });
+  }, []);
 
   const updateTx = useCallback((updates: Partial<BridgeTransaction>) => {
     setBridgeTx((prev) => {
@@ -98,13 +102,20 @@ export function useBridge() {
 
   const startBridge = useCallback(
     async (amount: string, fromChain: BridgeChainKey, toChain: BridgeChainKey) => {
-      if (!address || !walletClient || !publicClient) {
+      if (!address || !walletClient) {
         setError("Wallet not connected");
+        return;
+      }
+
+      if (fromChain === toChain) {
+        setError("Source and destination chains must be different");
         return;
       }
 
       const from = BRIDGE_CHAINS[fromChain];
       const to = BRIDGE_CHAINS[toChain];
+      const fromPublicClient = getChainClient(fromChain);
+      const toPublicClient = getChainClient(toChain);
       const parsedAmount = parseUnits(amount, from.usdcDecimals);
 
       const tx: BridgeTransaction = {
@@ -140,7 +151,7 @@ export function useBridge() {
           functionName: "balanceOf",
           args: [address],
         });
-        const raw = await publicClient.call({ to: from.usdc, data: callData });
+        const raw = await fromPublicClient.call({ to: from.usdc, data: callData });
         const balance = decodeFunctionResult({ abi: balanceOfAbi, functionName: "balanceOf", data: raw.data! }) as bigint;
 
         if (balance < parsedAmount) {
@@ -158,10 +169,10 @@ export function useBridge() {
           abi: ERC20_APPROVE_ABI,
           functionName: "approve",
           args: [from.tokenMessenger, parsedAmount],
-          chain: walletClient.chain,
+          chain: undefined,
           account: address,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await fromPublicClient.waitForTransactionReceipt({ hash: approveHash });
 
         // Step 2: Burn via depositForBurn (CCTP V2 — 7 params)
         setStatus("burning");
@@ -180,11 +191,11 @@ export function useBridge() {
           abi: TOKEN_MESSENGER_ABI,
           functionName: "depositForBurn",
           args: [parsedAmount, to.domain, mintRecipient, from.usdc, destinationCaller, maxFee, minFinalityThreshold],
-          chain: walletClient.chain,
+          chain: undefined,
           account: address,
         });
 
-        await publicClient.waitForTransactionReceipt({ hash: burnHash });
+        await fromPublicClient.waitForTransactionReceipt({ hash: burnHash });
 
         // Step 3: Poll V2 attestation API using domain + txHash (no manual log parsing needed)
         setStatus("waiting_attestation");
@@ -208,11 +219,11 @@ export function useBridge() {
           abi: MESSAGE_TRANSMITTER_ABI,
           functionName: "receiveMessage",
           args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
-          chain: walletClient.chain,
+          chain: undefined,
           account: address,
         });
 
-        await publicClient.waitForTransactionReceipt({ hash: mintHash });
+        await toPublicClient.waitForTransactionReceipt({ hash: mintHash });
 
         setStatus("complete");
         updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
@@ -223,14 +234,15 @@ export function useBridge() {
         updateTx({ status: "failed", error: msg });
       }
     },
-    [address, walletClient, publicClient, ensureChain, updateTx, attestationV2]
+    [address, walletClient, ensureChain, updateTx, attestationV2, getChainClient]
   );
 
   const completeMint = useCallback(async () => {
-    if (!bridgeTx || !walletClient || !publicClient || !bridgeTx.burnTxHash) return;
+    if (!bridgeTx || !walletClient || !bridgeTx.burnTxHash || !address) return;
 
     const from = BRIDGE_CHAINS[bridgeTx.fromChain];
     const to = BRIDGE_CHAINS[bridgeTx.toChain];
+    const toPublicClient = getChainClient(bridgeTx.toChain);
 
     try {
       // Re-poll attestation if needed
@@ -249,11 +261,11 @@ export function useBridge() {
         abi: MESSAGE_TRANSMITTER_ABI,
         functionName: "receiveMessage",
         args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
-        chain: walletClient.chain,
-        account: address!,
+        chain: undefined,
+        account: address,
       });
 
-      await publicClient.waitForTransactionReceipt({ hash: mintHash });
+      await toPublicClient.waitForTransactionReceipt({ hash: mintHash });
 
       setStatus("complete");
       updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
@@ -263,7 +275,7 @@ export function useBridge() {
       setError(msg);
       updateTx({ status: "failed", error: msg });
     }
-  }, [bridgeTx, walletClient, publicClient, attestationV2, ensureChain, updateTx, address]);
+  }, [bridgeTx, walletClient, attestationV2, ensureChain, updateTx, address, getChainClient]);
 
   const reset = useCallback(() => {
     setBridgeTx(null);

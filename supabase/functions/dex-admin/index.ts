@@ -8,6 +8,12 @@ const CORS_HEADERS = {
   "Content-Type": "application/json",
 };
 
+const LUNEX_CONTRACTS = [
+  "0xC24BFc8e4b10500a72A63Bec98CCC989CbDA41d8",
+  "0x66CF9CA9D75FD62438C6E254bA35E61775EF9496",
+  "0xcF2C839B12ECf6D9eEcd4607521B73fcFb7E8713",
+];
+
 function generateApiKey(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let key = "";
@@ -135,6 +141,83 @@ serve(async (req) => {
       if (keyId) query = query.eq("api_key_id", keyId);
       const { data } = await query.limit(1000);
       return json(buildUsageStats(data));
+    }
+
+    if (req.method === "GET" && action === "protocol-overview") {
+      const [profilesRes, volumeRes, appTxRes, chainWallets] = await Promise.all([
+        adminClient.from("profiles").select("id", { count: "exact", head: true }),
+        adminClient.from("protocol_volume").select("amount_usd, timestamp").order("timestamp", { ascending: false }).limit(1000),
+        adminClient.from("transactions").select("wallet_address, created_at").order("created_at", { ascending: false }).limit(1000),
+        fetchOnchainWalletActivity(),
+      ]);
+
+      const now = Date.now();
+      const dayMs = 86400000;
+      const weekMs = 7 * dayMs;
+      const monthMs = 30 * dayMs;
+
+      const appActivity = (appTxRes.data || []).map((row: any) => ({
+        address: String(row.wallet_address || "").toLowerCase(),
+        timestamp: new Date(row.created_at).getTime(),
+        source: "app" as const,
+      })).filter((row) => row.address);
+
+      const allActivity = [...appActivity, ...chainWallets];
+
+      const countDistinctSince = (windowMs: number) => new Set(
+        allActivity.filter((row) => row.timestamp >= now - windowMs).map((row) => row.address)
+      ).size;
+
+      const volumeRows = (volumeRes.data || []).map((row: any) => ({
+        amount: Number(row.amount_usd || 0),
+        timestamp: new Date(row.timestamp).getTime(),
+      }));
+      const sumVolumeSince = (windowMs: number) => volumeRows
+        .filter((row) => row.timestamp >= now - windowMs)
+        .reduce((sum, row) => sum + row.amount, 0);
+
+      const walletMap = new Map<string, { address: string; interactions: number; last_seen: string | null; sources: Set<string> }>();
+
+      for (const row of allActivity) {
+        const existing = walletMap.get(row.address) || {
+          address: row.address,
+          interactions: 0,
+          last_seen: null,
+          sources: new Set<string>(),
+        };
+        existing.interactions += 1;
+        existing.sources.add(row.source);
+        const iso = new Date(row.timestamp).toISOString();
+        if (!existing.last_seen || iso > existing.last_seen) existing.last_seen = iso;
+        walletMap.set(row.address, existing);
+      }
+
+      const wallet_addresses = Array.from(walletMap.values())
+        .sort((a, b) => (b.last_seen || "").localeCompare(a.last_seen || "") || b.interactions - a.interactions)
+        .slice(0, 250)
+        .map((row) => ({
+          address: row.address,
+          interactions: row.interactions,
+          last_seen: row.last_seen,
+          source: Array.from(row.sources).join(", "),
+        }));
+
+      return json({
+        registered_users: profilesRes.count || 0,
+        user_counts: {
+          daily: countDistinctSince(dayMs),
+          weekly: countDistinctSince(weekMs),
+          monthly: countDistinctSince(monthMs),
+          total: new Set(allActivity.map((row) => row.address)).size,
+        },
+        volume: {
+          daily: sumVolumeSince(dayMs),
+          weekly: sumVolumeSince(weekMs),
+          monthly: sumVolumeSince(monthMs),
+          total: volumeRows.reduce((sum, row) => sum + row.amount, 0),
+        },
+        wallet_addresses,
+      });
     }
 
     // LIST all users
@@ -269,4 +352,27 @@ function buildUsageStats(data: any[] | null) {
     byStatus[row.status_code] = (byStatus[row.status_code] || 0) + 1;
   }
   return { total_requests: total, rate_limited: rateLimited, by_endpoint: byEndpoint, by_status: byStatus, recent: (data || []).slice(0, 50) };
+}
+
+async function fetchOnchainWalletActivity() {
+  const responses = await Promise.all(
+    LUNEX_CONTRACTS.map(async (address) => {
+      try {
+        const url = `https://testnet.arcscan.app/api?module=account&action=txlist&address=${address}&sort=desc`;
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        const rows = Array.isArray(data?.result) ? data.result : [];
+        return rows.map((row: any) => ({
+          address: String(row.from || "").toLowerCase(),
+          timestamp: Number(row.timeStamp || 0) * 1000,
+          source: "onchain" as const,
+        })).filter((row: any) => row.address);
+      } catch {
+        return [];
+      }
+    })
+  );
+
+  return responses.flat();
 }
