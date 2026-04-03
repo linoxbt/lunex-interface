@@ -20,6 +20,7 @@ export interface BridgeChainConfig {
   label: string;
   domain: number;
   chainId: number;
+  rpcUrl: string;
   tokenMessenger: `0x${string}`;
   messageTransmitter: `0x${string}`;
   usdc: `0x${string}`;
@@ -33,6 +34,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Ethereum Sepolia",
     domain: 0,
     chainId: 11155111,
+    rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
@@ -44,6 +46,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Avalanche Fuji",
     domain: 1,
     chainId: 43113,
+    rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x5425890298aed601595a70AB815c96711a31Bc65",
@@ -55,6 +58,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Arbitrum Sepolia",
     domain: 3,
     chainId: 421614,
+    rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
@@ -66,6 +70,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Base Sepolia",
     domain: 6,
     chainId: 84532,
+    rpcUrl: "https://sepolia.base.org",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
@@ -77,6 +82,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Polygon Amoy",
     domain: 7,
     chainId: 80002,
+    rpcUrl: "https://rpc-amoy.polygon.technology",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
@@ -88,6 +94,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     label: "Arc Testnet",
     domain: 26,
     chainId: 5042002,
+    rpcUrl: "https://rpc.testnet.arc.network",
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x3600000000000000000000000000000000000000",
