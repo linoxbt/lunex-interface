@@ -151,7 +151,6 @@ export function useBridge() {
           functionName: "balanceOf",
           args: [address],
         });
-        const raw = await publicClient.call({ to: from.usdc, data: callData });
         const raw = await fromPublicClient.call({ to: from.usdc, data: callData });
         const balance = decodeFunctionResult({ abi: balanceOfAbi, functionName: "balanceOf", data: raw.data! }) as bigint;
 
@@ -170,6 +169,7 @@ export function useBridge() {
           abi: ERC20_APPROVE_ABI,
           functionName: "approve",
           args: [from.tokenMessenger, parsedAmount],
+          chain: undefined,
           account: address,
         });
         await fromPublicClient.waitForTransactionReceipt({ hash: approveHash });
@@ -191,6 +191,7 @@ export function useBridge() {
           abi: TOKEN_MESSENGER_ABI,
           functionName: "depositForBurn",
           args: [parsedAmount, to.domain, mintRecipient, from.usdc, destinationCaller, maxFee, minFinalityThreshold],
+          chain: undefined,
           account: address,
         });
 
@@ -218,6 +219,7 @@ export function useBridge() {
           abi: MESSAGE_TRANSMITTER_ABI,
           functionName: "receiveMessage",
           args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
+          chain: undefined,
           account: address,
         });
 
@@ -259,6 +261,7 @@ export function useBridge() {
         abi: MESSAGE_TRANSMITTER_ABI,
         functionName: "receiveMessage",
         args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
+        chain: undefined,
         account: address,
       });
 
