@@ -12,6 +12,7 @@ import { BridgeHistory } from "@/features/bridge/components/BridgeHistory";
 import { getPendingBridgeTransactions } from "@/features/bridge/state/bridgeState";
 import type { BridgeChainKey } from "@/features/bridge/config/bridgeConfig";
 import BackButton from "@/components/BackButton";
+import { hasInsufficientRawBalance, parseTokenAmount } from "@/lib/tokenAmounts";
 
 const Bridge = () => {
   const { isConnected } = useAccount();
@@ -22,7 +23,7 @@ const Bridge = () => {
   const [toChain, setToChain] = useState<BridgeChainKey>("arc");
   const [amount, setAmount] = useState("");
 
-  const { formatted: sourceBalance, isLoading: balanceLoading } =
+  const { balance: sourceBalanceRaw, formatted: sourceBalance, decimals: sourceDecimals, isLoading: balanceLoading } =
     useBridgeBalance(fromChain);
 
   // Auto-resume pending transactions on mount
@@ -48,15 +49,12 @@ const Bridge = () => {
     if (chain === fromChain) setFromChain(toChain);
   };
 
-  const insufficientBalance =
-    !!amount &&
-    parseFloat(amount) > 0 &&
-    sourceBalance !== undefined &&
-    parseFloat(sourceBalance.replace(/,/g, "")) < parseFloat(amount);
+  const parsedAmount = parseTokenAmount(amount, sourceDecimals);
+  const insufficientBalance = hasInsufficientRawBalance(amount, sourceBalanceRaw, sourceDecimals);
+  const sameChain = fromChain === toChain;
 
   const handleBridge = () => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    if (insufficientBalance) return;
+    if (!amount || parsedAmount <= 0n || insufficientBalance || sameChain) return;
     bridge.startBridge(amount, fromChain, toChain);
   };
 
@@ -154,10 +152,12 @@ const Bridge = () => {
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider h-11"
             onClick={handleBridge}
-            disabled={!amount || parseFloat(amount) <= 0 || insufficientBalance || isProcessing}
+            disabled={!amount || parsedAmount <= 0n || insufficientBalance || isProcessing || sameChain}
           >
             {isProcessing ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Bridging...</>
+            ) : sameChain ? (
+              "Select a Different Destination"
             ) : insufficientBalance ? (
               "Insufficient USDC Balance"
             ) : (

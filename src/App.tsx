@@ -9,7 +9,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { wagmiConfig } from "@/config/wagmi";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ChatBot from "@/components/ChatBot";
 import PageTransition from "@/components/PageTransition";
 import Landing from "@/pages/Landing";
 import Swap from "@/pages/Swap";
@@ -73,7 +72,6 @@ const App = () => (
                 <AnimatedRoutes />
               </main>
               <Footer />
-              <ChatBot />
             </div>
           </BrowserRouter>
         </TooltipProvider>

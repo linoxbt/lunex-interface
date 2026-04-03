@@ -91,7 +91,7 @@ export const BRIDGE_CHAINS: Record<BridgeChainKey, BridgeChainConfig> = {
     tokenMessenger: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
     usdc: "0x3600000000000000000000000000000000000000",
-    usdcDecimals: 18,
+    usdcDecimals: 6,
     explorerUrl: "https://testnet.arcscan.app",
   },
 };

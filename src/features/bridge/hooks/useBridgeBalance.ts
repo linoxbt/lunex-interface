@@ -18,11 +18,11 @@ export function useBridgeBalance(chainKey: BridgeChainKey) {
   const balance = rawBalance as bigint | undefined;
   const formatted =
     balance !== undefined
-      ? parseFloat(formatUnits(balance, 6)).toLocaleString(undefined, {
+      ? parseFloat(formatUnits(balance, chain.usdcDecimals)).toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
       : "0.00";
 
-  return { balance, formatted, isLoading };
+  return { balance, formatted, decimals: chain.usdcDecimals, isLoading };
 }

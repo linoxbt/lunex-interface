@@ -13,6 +13,7 @@ import { formatUnits, parseUnits } from "viem";
 import { vaultAbi } from "@/config/abis";
 import { CONTRACTS, arcTestnet } from "@/config/wagmi";
 import BackButton from "@/components/BackButton";
+import { hasInsufficientRawBalance, hasInsufficientTokenBalance, parseTokenAmount } from "@/lib/tokenAmounts";
 
 const VaultDetail = () => {
   const { token } = useParams<{ token: string }>();
@@ -113,10 +114,17 @@ const VaultDetail = () => {
     return amount;
   })();
 
+  const parsedInputAmount = parseTokenAmount(amount, 6);
+  const hasInsufficientDepositBalance = tab === "deposit" && hasInsufficientTokenBalance(amount, balance.balance);
+  const hasInsufficientWithdrawBalance = tab === "withdraw" && hasInsufficientRawBalance(amount, vault.userAssetsRaw, 6);
+  const hasInsufficientBalance = hasInsufficientDepositBalance || hasInsufficientWithdrawBalance;
+
   const getButtonText = () => {
     if (!isConnected) return "CONNECT WALLET";
     if (tab === "withdraw" && vault.userSharesRaw <= 0n) return "NO SHARES";
-    if (!amount) return "ENTER AN AMOUNT";
+    if (!amount || parsedInputAmount <= 0n) return "ENTER AN AMOUNT";
+    if (hasInsufficientDepositBalance) return `INSUFFICIENT ${tokenName}`;
+    if (hasInsufficientWithdrawBalance) return "AMOUNT EXCEEDS VAULT POSITION";
     if (active.isApproving) return "APPROVING...";
     if (active.isBusy) return tab === "deposit" ? "DEPOSITING..." : "WITHDRAWING...";
     return tab === "deposit" ? "DEPOSIT" : "WITHDRAW";
@@ -127,7 +135,7 @@ const VaultDetail = () => {
       openConnectModal();
       return;
     }
-    if (!amount) return;
+    if (!amount || parsedInputAmount <= 0n || hasInsufficientBalance) return;
     if (tab === "withdraw" && sharesToRedeemRaw <= 0n) return;
     active.execute();
   };
@@ -205,7 +213,7 @@ const VaultDetail = () => {
           </div>
         </div>
 
-        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 uppercase text-xs font-semibold tracking-wider" onClick={handleClick} disabled={active.isBusy}>
+        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 uppercase text-xs font-semibold tracking-wider" onClick={handleClick} disabled={active.isBusy || parsedInputAmount <= 0n || hasInsufficientBalance}>
           {active.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {getButtonText()}
         </Button>

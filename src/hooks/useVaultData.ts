@@ -50,6 +50,7 @@ export function useVaultData(tokenSymbol: "USDC" | "EURC") {
   });
 
   const userSharesRawBigInt = (userSharesRaw as bigint | undefined) ?? 0n;
+  const userAssetsRawBigInt = (userAssetsRaw as bigint | undefined) ?? 0n;
   const totalAssets = totalAssetsRaw ? parseFloat(formatUnits(totalAssetsRaw as bigint, 6)) : 0;
   const sharePrice = sharePriceRaw ? parseFloat(formatUnits(sharePriceRaw as bigint, 18)) : 0;
   const userShares = userSharesRaw ? parseFloat(formatUnits(userSharesRaw as bigint, 18)) : 0;
@@ -67,6 +68,7 @@ export function useVaultData(tokenSymbol: "USDC" | "EURC") {
     sharePrice,
     userShares,
     userDeposited,
+    userAssetsRaw: userAssetsRawBigInt,
     userSharesRaw: userSharesRawBigInt,
     isUserSharesLoading,
     isUserAssetsLoading,

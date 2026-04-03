@@ -9,6 +9,7 @@ import { usePoolData } from "@/hooks/usePoolData";
 import { TransactionModal, computeTxStage } from "@/components/TransactionModal";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import BackButton from "@/components/BackButton";
+import { hasInsufficientTokenBalance, parseTokenAmount } from "@/lib/tokenAmounts";
 
 const AddLiquidity = () => {
   const { isConnected } = useAccount();
@@ -57,11 +58,18 @@ const AddLiquidity = () => {
   };
 
   const sharePreview = pool.lpTotalSupply > 0 && liq.lpPreview > 0 ? ((liq.lpPreview / (pool.lpTotalSupply + liq.lpPreview)) * 100).toFixed(4) : "0.00";
-  const hasAmount = !!(usdcAmount || eurcAmount);
+  const parsedUsdcAmount = parseTokenAmount(usdcAmount, 6);
+  const parsedEurcAmount = parseTokenAmount(eurcAmount, 6);
+  const hasAmount = parsedUsdcAmount > 0n || parsedEurcAmount > 0n;
+  const hasInsufficientUsdc = hasInsufficientTokenBalance(usdcAmount, balances.USDC.balance);
+  const hasInsufficientEurc = hasInsufficientTokenBalance(eurcAmount, balances.EURC.balance);
+  const hasInsufficientBalance = hasInsufficientUsdc || hasInsufficientEurc;
 
   const getButtonText = () => {
     if (!isConnected) return "CONNECT WALLET";
     if (!hasAmount) return "ENTER AMOUNTS";
+    if (hasInsufficientUsdc) return "INSUFFICIENT USDC";
+    if (hasInsufficientEurc) return "INSUFFICIENT EURC";
     if (liq.isApproving) return "APPROVING...";
     if (liq.isBusy) return "ADDING LIQUIDITY...";
     return "ADD LIQUIDITY";
@@ -69,7 +77,7 @@ const AddLiquidity = () => {
 
   const handleClick = () => {
     if (!isConnected && openConnectModal) { openConnectModal(); return; }
-    if (hasAmount) liq.execute();
+    if (hasAmount && !hasInsufficientBalance) liq.execute();
   };
 
   const tokenFields = [
@@ -98,7 +106,7 @@ const AddLiquidity = () => {
           <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">LP Tokens Out</span><span className="text-foreground font-mono">{liq.lpPreview.toFixed(4)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Pool Share</span><span className="text-foreground font-mono">{sharePreview}%</span></div>
         </div>
-        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase" onClick={handleClick} disabled={liq.isBusy}>
+        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase" onClick={handleClick} disabled={liq.isBusy || !hasAmount || hasInsufficientBalance}>
           {liq.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}{getButtonText()}
         </Button>
       </div>
