@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Copy, Check, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
 
 const AVAILABLE_SERVICES = [
   { id: "quote", label: "Quote", description: "Get real-time swap quotes with expected output amounts" },
@@ -44,6 +44,7 @@ const Section = ({ title, children, defaultOpen = false }: { title: string; chil
 
 const SDKDeveloperGuide = () => {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const host = baseUrl?.replace("https://", "") || "your-project.supabase.co";
 
   return (
     <div className="space-y-4">
@@ -61,15 +62,15 @@ const SDKDeveloperGuide = () => {
           <li><strong>Wait for Approval</strong> — An admin will review and approve your request. You'll see the key in your dashboard once approved.</li>
           <li><strong>Authenticate Requests</strong> — Include your API key in every request header.</li>
         </ol>
-        <CodeBlock language="bash" code={`curl -H "x-api-key: lnx_your_api_key_here" \\
-  "${baseUrl || 'https://your-project.supabase.co'}/functions/v1/dex-quote?tokenIn=USDC&tokenOut=EURC&amountIn=1000000"`} />
+        <CodeBlock language="bash" code={`curl -H "x-api-key: lnx_your_api_key" \\
+  "${baseUrl || "https://your-project.supabase.co"}/functions/v1/dex-quote?tokenIn=USDC&tokenOut=EURC&amountIn=1000000"`} />
       </Section>
 
       <Section title="2. Authentication">
         <p className="mb-3">Every request must include the <code className="bg-muted px-1">x-api-key</code> header. Keys are scoped to specific services — attempting to use an endpoint not included in your key's allowed services will return a <strong>403 Forbidden</strong>.</p>
         <CodeBlock language="http" code={`GET /functions/v1/dex-quote?tokenIn=USDC&tokenOut=EURC&amountIn=1000000
-Host: ${baseUrl?.replace('https://', '') || 'your-project.supabase.co'}
-x-api-key: lnx_your_api_key_here`} />
+Host: ${host}
+x-api-key: lnx_your_api_key`} />
         <div className="mt-3 p-3 bg-destructive/5 border border-destructive/20 text-xs">
           <strong className="text-destructive">Important:</strong> Never expose your API key in client-side code. Use a server-side proxy or backend function for production.
         </div>
@@ -102,8 +103,8 @@ x-api-key: lnx_your_api_key_here`} />
             <tr><td className="p-2 font-mono">slippage</td><td className="p-2">number</td><td className="p-2">Optional. Max slippage in bps (default: 50 = 0.5%)</td></tr>
           </tbody>
         </table>
-        <CodeBlock language="bash" code={`curl "${baseUrl || ''}/functions/v1/dex-quote?tokenIn=USDC&tokenOut=EURC&amountIn=1000000" \\
-  -H "x-api-key: lnx_your_key"`} />
+        <CodeBlock language="bash" code={`curl "${baseUrl || ""}/functions/v1/dex-quote?tokenIn=USDC&tokenOut=EURC&amountIn=1000000&slippage=50" \\
+  -H "x-api-key: lnx_your_api_key"`} />
         <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">Response</h4>
         <CodeBlock language="json" code={`{
   "tokenIn": "USDC",
@@ -124,8 +125,8 @@ x-api-key: lnx_your_api_key_here`} />
 
       <Section title="5. POST /dex-swap — Execute Swap">
         <p className="mb-2">Generates an unsigned transaction for executing a swap on-chain.</p>
-        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ''}/functions/v1/dex-swap" \\
-  -H "x-api-key: lnx_your_key" \\
+        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ""}/functions/v1/dex-swap" \\
+  -H "x-api-key: lnx_your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "tokenIn": "USDC",
@@ -144,6 +145,7 @@ x-api-key: lnx_your_api_key_here`} />
     "chainId": 84532
   },
   "quote": { ... },
+  "userAddress": "0xYourWalletAddress",
   "protocol": "lunex",
   "timestamp": 1711900000
 }`} />
@@ -151,8 +153,8 @@ x-api-key: lnx_your_api_key_here`} />
 
       <Section title="6. GET /dex-liquidity — Pool Data">
         <p className="mb-2">Returns current pool reserves, TVL, and token balances. Essential for aggregator dashboards.</p>
-        <CodeBlock language="bash" code={`curl "${baseUrl || ''}/functions/v1/dex-liquidity" \\
-  -H "x-api-key: lnx_your_key"`} />
+        <CodeBlock language="bash" code={`curl "${baseUrl || ""}/functions/v1/dex-liquidity" \\
+  -H "x-api-key: lnx_your_api_key"`} />
         <CodeBlock language="json" code={`{
   "pool": "USDC-EURC",
   "reserves": { "USDC": "500000000000", "EURC": "460000000000" },
@@ -167,8 +169,8 @@ x-api-key: lnx_your_api_key_here`} />
 
       <Section title="7. GET /dex-price — Exchange Rates">
         <p className="mb-2">Returns the current exchange rate between USDC and EURC, with 24-hour price change data.</p>
-        <CodeBlock language="bash" code={`curl "${baseUrl || ''}/functions/v1/dex-price" \\
-  -H "x-api-key: lnx_your_key"`} />
+        <CodeBlock language="bash" code={`curl "${baseUrl || ""}/functions/v1/dex-price" \\
+  -H "x-api-key: lnx_your_api_key"`} />
         <CodeBlock language="json" code={`{
   "pair": "USDC/EURC",
   "price": "0.9200",
@@ -184,15 +186,15 @@ x-api-key: lnx_your_api_key_here`} />
 
       <Section title="8. POST /dex-webhook — Reserve Notifications">
         <p className="mb-2">Register a webhook URL to receive notifications when pool reserves change significantly (e.g., {">"}5% change).</p>
-        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ''}/functions/v1/dex-webhook" \\
-  -H "x-api-key: lnx_your_key" \\
+        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ""}/functions/v1/dex-webhook" \\
+  -H "x-api-key: lnx_your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "callback_url": "https://your-app.com/webhook/lunex",
     "events": ["reserve_change", "large_swap"],
     "threshold_percent": 5
   }'`} />
-        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">Webhook Payload</h4>
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">8.1 reserve_change Payload</h4>
         <CodeBlock language="json" code={`{
   "event": "reserve_change",
   "pool": "USDC-EURC",
@@ -201,6 +203,28 @@ x-api-key: lnx_your_api_key_here`} />
   "change_percent": "5.2",
   "timestamp": 1711900000
 }`} />
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">8.2 large_swap Payload</h4>
+        <CodeBlock language="json" code={`{
+  "event": "large_swap",
+  "pool": "USDC-EURC",
+  "swap": {
+    "tokenIn": "USDC",
+    "tokenOut": "EURC",
+    "amountIn": "100000000000",
+    "amountOut": "91540000000",
+    "usd_value": "100000.00"
+  },
+  "price_impact": "2.5",
+  "timestamp": 1711900000
+}`} />
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">Webhook Events</h4>
+        <table className="w-full text-xs border border-border">
+          <thead><tr className="bg-muted/30"><th className="text-left p-2 border-b border-border">Event</th><th className="text-left p-2 border-b border-border">Trigger</th></tr></thead>
+          <tbody>
+            <tr><td className="p-2 border-b border-border font-mono">reserve_change</td><td className="p-2 border-b border-border">Pool reserves change by threshold %</td></tr>
+            <tr><td className="p-2 font-mono">large_swap</td><td className="p-2">Single swap exceeds 50k USD equivalent</td></tr>
+          </tbody>
+        </table>
       </Section>
 
       <Section title="9. Rate Limits">
@@ -209,9 +233,10 @@ x-api-key: lnx_your_api_key_here`} />
           <thead><tr className="bg-muted/30"><th className="text-left p-2 border-b border-border">Tier</th><th className="text-left p-2 border-b border-border">Requests/min</th><th className="text-left p-2 border-b border-border">Daily Limit</th></tr></thead>
           <tbody>
             <tr><td className="p-2 border-b border-border">Developer</td><td className="p-2 border-b border-border">60</td><td className="p-2 border-b border-border">10,000</td></tr>
-            <tr><td className="p-2">Admin</td><td className="p-2">120</td><td className="p-2">Unlimited</td></tr>
+            <tr><td className="p-2">Admin</td><td className="p-2">120</td><td className="p-2">Unlimited*</td></tr>
           </tbody>
         </table>
+        <p className="mt-2 text-[10px] text-muted-foreground">*Subject to fair use policy. Contact support for {">"}100k daily requests.</p>
         <p className="mt-3 text-xs">When rate-limited, the API returns <code className="bg-muted px-1">429 Too Many Requests</code>. Implement exponential backoff in your integration.</p>
       </Section>
 
@@ -223,13 +248,18 @@ x-api-key: lnx_your_api_key_here`} />
   "details": { ... }
 }`} />
         <table className="w-full text-xs border border-border mt-3">
-          <thead><tr className="bg-muted/30"><th className="text-left p-2 border-b border-border">Status</th><th className="text-left p-2 border-b border-border">Meaning</th></tr></thead>
+          <thead><tr className="bg-muted/30"><th className="text-left p-2 border-b border-border">Status</th><th className="text-left p-2 border-b border-border">Code</th><th className="text-left p-2 border-b border-border">Meaning</th></tr></thead>
           <tbody>
-            <tr><td className="p-2 border-b border-border font-mono">400</td><td className="p-2 border-b border-border">Bad request — invalid parameters</td></tr>
-            <tr><td className="p-2 border-b border-border font-mono">401</td><td className="p-2 border-b border-border">Missing or invalid API key</td></tr>
-            <tr><td className="p-2 border-b border-border font-mono">403</td><td className="p-2 border-b border-border">API key not authorized for this service</td></tr>
-            <tr><td className="p-2 border-b border-border font-mono">429</td><td className="p-2 border-b border-border">Rate limit exceeded</td></tr>
-            <tr><td className="p-2 font-mono">500</td><td className="p-2">Internal server error</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">400</td><td className="p-2 border-b border-border font-mono">INVALID_TOKEN</td><td className="p-2 border-b border-border">Token symbol not recognized</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">400</td><td className="p-2 border-b border-border font-mono">INSUFFICIENT_LIQUIDITY</td><td className="p-2 border-b border-border">Pool cannot fulfill request</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">400</td><td className="p-2 border-b border-border font-mono">INVALID_AMOUNT</td><td className="p-2 border-b border-border">Amount format invalid or zero</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">401</td><td className="p-2 border-b border-border font-mono">MISSING_API_KEY</td><td className="p-2 border-b border-border">No x-api-key header provided</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">401</td><td className="p-2 border-b border-border font-mono">INVALID_API_KEY</td><td className="p-2 border-b border-border">API key format invalid</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">403</td><td className="p-2 border-b border-border font-mono">UNAUTHORIZED_SERVICE</td><td className="p-2 border-b border-border">Key not scoped for this endpoint</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">403</td><td className="p-2 border-b border-border font-mono">KEY_REVOKED</td><td className="p-2 border-b border-border">API key has been revoked</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">429</td><td className="p-2 border-b border-border font-mono">RATE_LIMIT_EXCEEDED</td><td className="p-2 border-b border-border">Too many requests</td></tr>
+            <tr><td className="p-2 border-b border-border font-mono">500</td><td className="p-2 border-b border-border font-mono">INTERNAL_ERROR</td><td className="p-2 border-b border-border">Server error, retry with backoff</td></tr>
+            <tr><td className="p-2 font-mono">503</td><td className="p-2 font-mono">CCTP_UNAVAILABLE</td><td className="p-2">Circle attestation service down</td></tr>
           </tbody>
         </table>
       </Section>
@@ -287,14 +317,14 @@ x-api-key: lnx_your_api_key_here`} />
 }
 
 // Usage
-const lunex = new LunexSDK("lnx_your_key", "${baseUrl || 'https://your-project.supabase.co'}");
+const lunex = new LunexSDK("lnx_your_api_key", "${baseUrl || "https://your-project.supabase.co"}");
 const quote = await lunex.getQuote("USDC", "EURC", "1000000");
 console.log("Expected output:", quote.amountOut);`} />
       </Section>
 
       <Section title="12. CCTP Bridge Integration">
-        <p className="mb-3">Lunex supports cross-chain USDC transfers via Circle's Cross-Chain Transfer Protocol (CCTP). The bridge supports the following chains:</p>
-        <div className="space-y-1 mb-3">
+        <p className="mb-3">Lunex supports cross-chain USDC transfers via Circle's Cross-Chain Transfer Protocol (CCTP V2). The bridge supports the following chains:</p>
+        <div className="space-y-1 mb-4">
           {["Ethereum Sepolia", "Base Sepolia", "Arbitrum Sepolia", "Avalanche Fuji", "Polygon Amoy", "Arc Testnet"].map(c => (
             <div key={c} className="flex items-center gap-2 text-xs">
               <span className="w-1.5 h-1.5 bg-primary rounded-full" />
@@ -302,12 +332,66 @@ console.log("Expected output:", quote.amountOut);`} />
             </div>
           ))}
         </div>
-        <p className="text-xs mb-2">The bridge flow:</p>
+
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">12.1 POST /cctp-deposit — Initiate Bridge</h4>
+        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ""}/functions/v1/cctp-deposit" \\
+  -H "x-api-key: lnx_your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": "1000000000",
+    "sourceChain": "base-sepolia",
+    "destinationChain": "ethereum-sepolia",
+    "mintRecipient": "0xRecipientAddress"
+  }'`} />
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-2 mb-2">Response</h4>
+        <CodeBlock language="json" code={`{
+  "depositTx": {
+    "to": "0xTokenMessenger",
+    "data": "0x...",
+    "value": "0",
+    "chainId": 84532
+  },
+  "messageBytes": "0x...",
+  "messageHash": "0x...",
+  "attestationApi": "https://iris-api-sandbox.circle.com/v2/messages"
+}`} />
+
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">12.2 GET /cctp-attestation — Check Attestation Status</h4>
+        <CodeBlock language="bash" code={`curl "${baseUrl || ""}/functions/v1/cctp-attestation?domain=6&txHash=0xYourBurnTxHash" \\
+  -H "x-api-key: lnx_your_api_key"`} />
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-2 mb-2">Response</h4>
+        <CodeBlock language="json" code={`{
+  "status": "complete",
+  "attestation": "0x...",
+  "message": "0x...",
+  "timestamp": 1711900000
+}`} />
+
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-4 mb-2">12.3 POST /cctp-receive — Complete Bridge (Mint)</h4>
+        <CodeBlock language="bash" code={`curl -X POST "${baseUrl || ""}/functions/v1/cctp-receive" \\
+  -H "x-api-key: lnx_your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "messageBytes": "0x...",
+    "attestation": "0x...",
+    "destinationChain": "ethereum-sepolia"
+  }'`} />
+        <h4 className="text-xs font-semibold tracking-wider uppercase mt-2 mb-2">Response</h4>
+        <CodeBlock language="json" code={`{
+  "receiveTx": {
+    "to": "0xMessageTransmitter",
+    "data": "0x...",
+    "chainId": 11155111
+  },
+  "estimatedGas": "150000"
+}`} />
+
+        <p className="text-xs mt-4 mb-2"><strong>Bridge Flow:</strong></p>
         <ol className="list-decimal list-inside space-y-1 text-xs">
           <li>Approve USDC spend to TokenMessenger contract</li>
-          <li>Call <code className="bg-muted px-1">depositForBurn</code> on source chain</li>
-          <li>Wait for Circle attestation (5-20 minutes)</li>
-          <li>Call <code className="bg-muted px-1">receiveMessage</code> on destination chain</li>
+          <li>Call <code className="bg-muted px-1">depositForBurn</code> on source chain (CCTP V2 — 7 parameters)</li>
+          <li>Poll Circle Iris API for attestation (5-20 minutes)</li>
+          <li>Call <code className="bg-muted px-1">receiveMessage</code> on destination chain with attestation</li>
         </ol>
       </Section>
     </div>

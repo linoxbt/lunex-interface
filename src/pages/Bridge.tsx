@@ -101,9 +101,19 @@ const Bridge = () => {
         )}
 
         <div className="space-y-2">
-          <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-            Amount (USDC)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+              Amount (USDC)
+            </label>
+            {isConnected && (
+              <button
+                onClick={() => setAmount(sourceBalance)}
+                className="text-[10px] text-primary font-semibold uppercase tracking-wider hover:underline"
+              >
+                Max
+              </button>
+            )}
+          </div>
           <Input
             type="number"
             placeholder="0.00"

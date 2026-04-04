@@ -124,10 +124,13 @@ const Swap = () => {
           <p className="text-xs text-muted-foreground mb-3 tracking-wider uppercase">You Pay</p>
           <div className="flex items-center gap-3">
             <input type="number" placeholder="0.00" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} disabled={!isConnected}
-              className="flex-1 bg-transparent text-3xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono disabled:opacity-50 min-w-0" />
+              className="flex-1 bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono disabled:opacity-50 min-w-0" />
             <TokenSelector selected={fromToken} onSelect={(t) => { if (t.symbol === toToken.symbol) setToToken(fromToken); setFromToken(t); }} />
           </div>
-          <p className="text-xs text-muted-foreground mt-2 font-mono">Balance: {bal?.isLoading ? "..." : bal?.formatted ?? "0.00"}</p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-muted-foreground font-mono">Balance: {bal?.isLoading ? "..." : bal?.formatted ?? "0.00"}</p>
+            {isConnected && <button onClick={() => setFromAmount(bal?.balance?.formatted ?? "")} className="text-[10px] text-primary font-semibold uppercase tracking-wider hover:underline">Max</button>}
+          </div>
         </div>
 
         <div className="flex justify-center -my-4 relative z-10">

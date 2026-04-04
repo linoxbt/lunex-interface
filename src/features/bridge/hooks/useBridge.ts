@@ -219,10 +219,10 @@ export function useBridge() {
           throw new Error("Attestation timeout — you can retry minting later from bridge history");
         }
 
-        // Step 4: Mint on destination
-        await ensureChain(to.chainId);
+        // Step 4: Mint on destination — switch wallet to destination chain
         setStatus("minting");
         updateTx({ status: "minting" });
+        await ensureChain(to.chainId);
 
         const mintHash = await walletClient.writeContract({
           address: to.messageTransmitter,
