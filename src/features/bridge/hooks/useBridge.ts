@@ -94,7 +94,17 @@ export function useBridge() {
   const ensureChain = useCallback(
     async (targetChainId: number) => {
       if (chainId !== targetChainId) {
-        await switchChainAsync({ chainId: targetChainId });
+        try {
+          await switchChainAsync({ chainId: targetChainId });
+        } catch (switchError: any) {
+          // If the chain isn't added to wallet, the switch will fail
+          // Prompt user to switch manually
+          throw new Error(
+            `Please switch your wallet to the correct network (chain ID: ${targetChainId}) and try again.`
+          );
+        }
+        // Wait a moment for the wallet to settle after chain switch
+        await new Promise((r) => setTimeout(r, 1500));
       }
     },
     [chainId, switchChainAsync]
@@ -209,10 +219,10 @@ export function useBridge() {
           throw new Error("Attestation timeout — you can retry minting later from bridge history");
         }
 
-        // Step 4: Mint on destination
-        await ensureChain(to.chainId);
+        // Step 4: Mint on destination — switch wallet to destination chain
         setStatus("minting");
         updateTx({ status: "minting" });
+        await ensureChain(to.chainId);
 
         const mintHash = await walletClient.writeContract({
           address: to.messageTransmitter,

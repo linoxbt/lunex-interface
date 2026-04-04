@@ -70,7 +70,7 @@ const Bridge = () => {
   return (
     <div className="container max-w-lg mx-auto py-16 px-4">
       <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
+      <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider">
         Bridge USDC across chains via Circle CCTP
       </p>
@@ -101,9 +101,19 @@ const Bridge = () => {
         )}
 
         <div className="space-y-2">
-          <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-            Amount (USDC)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+              Amount (USDC)
+            </label>
+            {isConnected && (
+              <button
+                onClick={() => setAmount(sourceBalance)}
+                className="text-[10px] text-primary font-semibold uppercase tracking-wider hover:underline"
+              >
+                Max
+              </button>
+            )}
+          </div>
           <Input
             type="number"
             placeholder="0.00"
