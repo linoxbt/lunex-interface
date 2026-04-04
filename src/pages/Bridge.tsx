@@ -70,7 +70,7 @@ const Bridge = () => {
   return (
     <div className="container max-w-lg mx-auto py-16 px-4">
       <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
+      <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider">
         Bridge USDC across chains via Circle CCTP
       </p>

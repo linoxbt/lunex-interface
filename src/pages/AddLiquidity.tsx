@@ -88,7 +88,7 @@ const AddLiquidity = () => {
   return (
     <div className="container max-w-md mx-auto py-16">
       <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Add Liquidity</h1>
+      <h1 className="text-2xl font-bold uppercase tracking-tight mb-8">Add Liquidity</h1>
       <div className="border border-border bg-card p-6 space-y-4">
         {tokenFields.map(({ token, value, onChange }) => {
           const bal = balances[token];

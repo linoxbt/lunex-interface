@@ -224,8 +224,8 @@ const AdminDashboard = () => {
       <BackButton />
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold uppercase tracking-tight">Lunex SDK</h1>
-          <p className="text-xs text-muted-foreground tracking-wider uppercase mt-1">Admin Dashboard</p>
+          <h1 className="text-2xl font-bold uppercase tracking-tight">Lunex SDK</h1>
+          <p className="text-[10px] text-muted-foreground tracking-wider uppercase mt-1">Admin Dashboard</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-mono">{user?.email}</span>

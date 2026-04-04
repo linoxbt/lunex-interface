@@ -151,7 +151,7 @@ const VaultDetail = () => {
   return (
     <div className="container max-w-md mx-auto py-16">
       <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">{shareName} Vault</h1>
+      <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">{shareName} Vault</h1>
       <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">
         APY: <span className="font-mono">—</span> · Share Price: 1 {shareName} = {vault.sharePrice.toFixed(6)} {tokenName}
       </p>

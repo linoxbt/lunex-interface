@@ -89,7 +89,7 @@ const RemoveLiquidity = () => {
   return (
     <div className="container max-w-md mx-auto py-16">
       <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Remove Liquidity</h1>
+      <h1 className="text-2xl font-bold uppercase tracking-tight mb-8">Remove Liquidity</h1>
       <div className="border border-border bg-card p-6 space-y-6">
         <div>
           <div className="flex justify-between text-sm mb-2"><span className="text-muted-foreground text-xs uppercase tracking-wider">Your LP Balance</span><span className="text-foreground font-mono text-xs">{pool.lpBalance.toFixed(4)}</span></div>

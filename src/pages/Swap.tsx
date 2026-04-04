@@ -101,7 +101,7 @@ const Swap = () => {
       )}
 
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold uppercase tracking-tight">Swap</h1>
+        <h1 className="text-2xl font-bold uppercase tracking-tight">Swap</h1>
         <button onClick={() => setShowSlippage(!showSlippage)} className="text-muted-foreground hover:text-foreground transition-colors">
           <Settings className="h-5 w-5" />
         </button>
