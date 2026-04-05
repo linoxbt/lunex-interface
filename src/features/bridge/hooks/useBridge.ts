@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
 import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult, createPublicClient, http } from "viem";
 import {
@@ -66,14 +66,54 @@ function useAttestationV2() {
   return { attestation, message, status, error, startPolling };
 }
 
+/**
+ * Request wallet to switch to a specific chain using window.ethereum directly.
+ * This avoids wagmi's stale chainId issues during multi-step flows.
+ */
+async function switchWalletChain(targetChainId: number): Promise<void> {
+  const provider = (window as any).ethereum;
+  if (!provider) throw new Error("No wallet provider found");
+
+  const hexChainId = "0x" + targetChainId.toString(16);
+
+  try {
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: hexChainId }],
+    });
+  } catch (switchError: any) {
+    // 4902 = chain not added
+    if (switchError?.code === 4902) {
+      throw new Error(
+        `Chain ${targetChainId} not added to your wallet. Please add it manually and retry.`
+      );
+    }
+    throw new Error(
+      `Please switch your wallet to chain ID ${targetChainId} and try again.`
+    );
+  }
+
+  // Wait for wallet to settle
+  await new Promise((r) => setTimeout(r, 2000));
+}
+
+/** Get current wallet chain ID directly from provider */
+async function getWalletChainId(): Promise<number> {
+  const provider = (window as any).ethereum;
+  if (!provider) return 0;
+  const hex = await provider.request({ method: "eth_chainId" });
+  return parseInt(hex, 16);
+}
+
 export function useBridge() {
-  const { address, chainId } = useAccount();
+  const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { switchChainAsync } = useSwitchChain();
 
   const [bridgeTx, setBridgeTx] = useState<BridgeTransaction | null>(null);
   const [status, setStatus] = useState<BridgeStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   const attestationV2 = useAttestationV2();
 
@@ -91,23 +131,27 @@ export function useBridge() {
     });
   }, []);
 
+  /**
+   * Ensure wallet is on the correct chain. Uses direct provider calls
+   * to avoid stale wagmi state during multi-step bridge flows.
+   */
   const ensureChain = useCallback(
-    async (targetChainId: number) => {
-      if (chainId !== targetChainId) {
-        try {
-          await switchChainAsync({ chainId: targetChainId });
-        } catch (switchError: any) {
-          // If the chain isn't added to wallet, the switch will fail
-          // Prompt user to switch manually
-          throw new Error(
-            `Please switch your wallet to the correct network (chain ID: ${targetChainId}) and try again.`
-          );
-        }
-        // Wait a moment for the wallet to settle after chain switch
-        await new Promise((r) => setTimeout(r, 1500));
+    async (targetChainId: number, label: string) => {
+      const currentChainId = await getWalletChainId();
+      if (currentChainId === targetChainId) return;
+
+      setStatusMessage(`Switching to ${label}...`);
+      await switchWalletChain(targetChainId);
+
+      // Verify switch succeeded
+      const afterChainId = await getWalletChainId();
+      if (afterChainId !== targetChainId) {
+        throw new Error(
+          `Wallet is still on chain ${afterChainId}. Please switch to ${label} (chain ID: ${targetChainId}) manually.`
+        );
       }
     },
-    [chainId, switchChainAsync]
+    []
   );
 
   const startBridge = useCallback(
@@ -141,11 +185,12 @@ export function useBridge() {
       setBridgeTx(tx);
       setStatus("approving");
       setError(null);
+      setStatusMessage("");
       saveBridgeTransaction(tx);
 
       try {
-        // Ensure correct chain
-        await ensureChain(from.chainId);
+        // ── Step 0: Ensure wallet is on SOURCE chain ──
+        await ensureChain(from.chainId, from.label);
 
         // Pre-flight: check USDC balance
         const balanceOfAbi = [{
@@ -170,9 +215,13 @@ export function useBridge() {
           );
         }
 
-        // Step 1: Approve USDC
+        // ── Step 1: Approve USDC (on SOURCE chain) ──
         setStatus("approving");
+        setStatusMessage("Approving USDC spend on " + from.label + "...");
         updateTx({ status: "approving" });
+
+        // Verify still on source chain before approve
+        await ensureChain(from.chainId, from.label);
 
         const approveHash = await walletClient.writeContract({
           address: from.usdc,
@@ -184,16 +233,17 @@ export function useBridge() {
         });
         await fromPublicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        // Step 2: Burn via depositForBurn (CCTP V2 — 7 params)
+        // ── Step 2: Burn via depositForBurn (on SOURCE chain) ──
         setStatus("burning");
+        setStatusMessage("Burning USDC on " + from.label + "...");
         updateTx({ status: "burning" });
 
+        // Verify STILL on source chain — do NOT switch to destination
+        await ensureChain(from.chainId, from.label);
+
         const mintRecipient = pad(address, { size: 32 });
-        // destinationCaller = bytes32(0) means anyone can relay
         const destinationCaller = zeroHash as `0x${string}`;
-        // maxFee = 0 for standard transfer (no fast transfer fee)
         const maxFee = 0n;
-        // minFinalityThreshold: 0 = default finality, 1000 = fast
         const minFinalityThreshold = 2000;
 
         const burnHash = await walletClient.writeContract({
@@ -207,8 +257,9 @@ export function useBridge() {
 
         await fromPublicClient.waitForTransactionReceipt({ hash: burnHash });
 
-        // Step 3: Poll V2 attestation API using domain + txHash (no manual log parsing needed)
+        // ── Step 3: Wait for attestation (remain on SOURCE chain) ──
         setStatus("waiting_attestation");
+        setStatusMessage("Waiting for Circle attestation...");
         updateTx({
           status: "waiting_attestation",
           burnTxHash: burnHash,
@@ -219,10 +270,12 @@ export function useBridge() {
           throw new Error("Attestation timeout — you can retry minting later from bridge history");
         }
 
-        // Step 4: Mint on destination — switch wallet to destination chain
+        // ── Step 4: Mint on DESTINATION chain — NOW switch ──
         setStatus("minting");
+        setStatusMessage("Switch to " + to.label + " to complete mint...");
         updateTx({ status: "minting" });
-        await ensureChain(to.chainId);
+
+        await ensureChain(to.chainId, to.label);
 
         const mintHash = await walletClient.writeContract({
           address: to.messageTransmitter,
@@ -236,11 +289,13 @@ export function useBridge() {
         await toPublicClient.waitForTransactionReceipt({ hash: mintHash });
 
         setStatus("complete");
+        setStatusMessage("Bridge complete!");
         updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
       } catch (err: any) {
         const msg = err?.shortMessage || err?.message || "Bridge failed";
         setStatus("failed");
         setError(msg);
+        setStatusMessage("");
         updateTx({ status: "failed", error: msg });
       }
     },
@@ -257,13 +312,18 @@ export function useBridge() {
     try {
       // Re-poll attestation if needed
       setStatus("waiting_attestation");
+      setStatusMessage("Checking attestation status...");
       const attResult = await attestationV2.startPolling(from.domain, bridgeTx.burnTxHash);
       if (!attResult) {
         throw new Error("Attestation not ready yet");
       }
 
-      await ensureChain(to.chainId);
+      // Switch to destination chain for minting
+      setStatusMessage("Switch to " + to.label + " to complete mint...");
+      await ensureChain(to.chainId, to.label);
+
       setStatus("minting");
+      setStatusMessage("Minting USDC on " + to.label + "...");
       updateTx({ status: "minting" });
 
       const mintHash = await walletClient.writeContract({
@@ -278,11 +338,13 @@ export function useBridge() {
       await toPublicClient.waitForTransactionReceipt({ hash: mintHash });
 
       setStatus("complete");
+      setStatusMessage("Bridge complete!");
       updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
     } catch (err: any) {
       const msg = err?.shortMessage || err?.message || "Mint failed";
       setStatus("failed");
       setError(msg);
+      setStatusMessage("");
       updateTx({ status: "failed", error: msg });
     }
   }, [bridgeTx, walletClient, attestationV2, ensureChain, updateTx, address, getChainClient]);
@@ -291,17 +353,20 @@ export function useBridge() {
     setBridgeTx(null);
     setStatus("idle");
     setError(null);
+    setStatusMessage("");
   }, []);
 
   const resumeBridge = useCallback((tx: BridgeTransaction) => {
     setBridgeTx(tx);
     setStatus(tx.status);
     setError(tx.error || null);
+    setStatusMessage("");
   }, []);
 
   return {
     status,
     error,
+    statusMessage,
     bridgeTx,
     attestation: attestationV2,
     startBridge,

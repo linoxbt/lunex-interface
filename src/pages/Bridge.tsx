@@ -200,9 +200,13 @@ const Bridge = () => {
         <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>
-            {bridge.status === "approving" && "Approving USDC..."}
-            {bridge.status === "burning" && "Burning USDC on source chain..."}
-            {bridge.status === "minting" && "Minting USDC on destination..."}
+            {bridge.statusMessage || (
+              <>
+                {bridge.status === "approving" && "Approving USDC..."}
+                {bridge.status === "burning" && "Burning USDC on source chain..."}
+                {bridge.status === "minting" && "Minting USDC on destination..."}
+              </>
+            )}
           </span>
         </div>
       )}
