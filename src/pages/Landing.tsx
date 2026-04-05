@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, DollarSign, Droplets, Shield, BarChart3 } from "lucide-react";
+import { ArrowRight, DollarSign, BarChart3 } from "lucide-react";
 import FaucetBanner from "@/components/FaucetBanner";
 import { usePoolData } from "@/hooks/usePoolData";
 import { useVaultData } from "@/hooks/useVaultData";
