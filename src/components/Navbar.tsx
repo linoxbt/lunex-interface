@@ -24,9 +24,9 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center gap-10">
-          <Link to="/" className="inline-flex items-center gap-[6px]">
-            <img src={lunexLogo} alt="LUNEX" className="h-6 w-auto" />
-            <span className="text-sm font-bold text-foreground tracking-widest uppercase leading-none">LUNEX</span>
+          <Link to="/" className="inline-flex items-center gap-1">
+            <img src={lunexLogo} alt="LUNEX" className="h-5 w-auto" />
+            <span className="text-sm font-bold text-foreground tracking-wide uppercase leading-none">LUNEX</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
