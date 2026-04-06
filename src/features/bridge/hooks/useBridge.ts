@@ -234,6 +234,7 @@ export function useBridge() {
           functionName: "approve",
           args: [from.tokenMessenger, parsedAmount],
           account: address,
+          chain: null as any,
         });
         await fromPublicClient.waitForTransactionReceipt({ hash: approveHash });
 
@@ -256,6 +257,7 @@ export function useBridge() {
           functionName: "depositForBurn",
           args: [parsedAmount, to.domain, mintRecipient, from.usdc, destinationCaller, maxFee, minFinalityThreshold],
           account: address,
+          chain: null as any,
         });
 
         await fromPublicClient.waitForTransactionReceipt({ hash: burnHash });
@@ -291,6 +293,7 @@ export function useBridge() {
           functionName: "receiveMessage",
           args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
           account: address,
+          chain: null as any,
         });
 
         await toPublicClient.waitForTransactionReceipt({ hash: mintHash });
@@ -344,6 +347,7 @@ export function useBridge() {
         functionName: "receiveMessage",
         args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
         account: address,
+        chain: null as any,
       });
 
       await toPublicClient.waitForTransactionReceipt({ hash: mintHash });

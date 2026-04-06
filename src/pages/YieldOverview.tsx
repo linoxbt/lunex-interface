@@ -33,6 +33,17 @@ const YieldOverview = () => {
       <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Yield Vaults</h1>
 
       {isConnected && hasPositions && (
+        <>
+        <div className="border border-border bg-card p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Rewards</h3>
+             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase">Claim Rewards</Button>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Earned LUNEX</span><span className="font-mono text-green-500 font-bold">12.50</span></div>
+               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Pending Compounding</span><span className="font-mono text-primary font-bold">$4.20</span></div>
+          </div>
+        </div>
         <div className="border border-border bg-card p-6 mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase mb-4 text-primary">Your Vault Positions</h3>
           <div className="grid md:grid-cols-2 gap-4">
@@ -46,6 +57,7 @@ const YieldOverview = () => {
             ))}
           </div>
         </div>
+        </>
       )}
 
       {isConnected && !hasPositions && (

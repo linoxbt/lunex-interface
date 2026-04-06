@@ -90,6 +90,9 @@
   * {
     @apply border-border;
   }
+  html {
+    font-size: 14px;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Space Grotesk', 'DM Mono', monospace;
@@ -142,4 +145,10 @@
     linear-gradient(hsl(0 0% 14% / 0.5) 1px, transparent 1px),
     linear-gradient(90deg, hsl(0 0% 14% / 0.5) 1px, transparent 1px);
   background-size: 60px 60px;
+}
+
+.dark .grid-bg {
+  background-image:
+    linear-gradient(hsl(0 0% 14% / 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(0 0% 14% / 0.8) 1px, transparent 1px);
 }
