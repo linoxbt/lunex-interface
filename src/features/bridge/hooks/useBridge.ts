@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
-import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult, createPublicClient, http } from "viem";
+import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult, createPublicClient, http, createWalletClient, custom } from "viem";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
@@ -223,12 +223,16 @@ export function useBridge() {
         // Verify still on source chain before approve
         await ensureChain(from.chainId, from.label);
 
-        const approveHash = await walletClient.writeContract({
+        const sourceWalletClient = createWalletClient({
+          account: address as `0x${string}`,
+          transport: custom((window as any).ethereum)
+        });
+
+        const approveHash = await sourceWalletClient.writeContract({
           address: from.usdc,
           abi: ERC20_APPROVE_ABI,
           functionName: "approve",
           args: [from.tokenMessenger, parsedAmount],
-          chain: undefined,
           account: address,
         });
         await fromPublicClient.waitForTransactionReceipt({ hash: approveHash });
@@ -246,12 +250,11 @@ export function useBridge() {
         const maxFee = 0n;
         const minFinalityThreshold = 2000;
 
-        const burnHash = await walletClient.writeContract({
+        const burnHash = await sourceWalletClient.writeContract({
           address: from.tokenMessenger,
           abi: TOKEN_MESSENGER_ABI,
           functionName: "depositForBurn",
           args: [parsedAmount, to.domain, mintRecipient, from.usdc, destinationCaller, maxFee, minFinalityThreshold],
-          chain: undefined,
           account: address,
         });
 
@@ -277,12 +280,16 @@ export function useBridge() {
 
         await ensureChain(to.chainId, to.label);
 
-        const mintHash = await walletClient.writeContract({
+        const mintWalletClient = createWalletClient({
+          account: address as `0x${string}`,
+          transport: custom((window as any).ethereum)
+        });
+
+        const mintHash = await mintWalletClient.writeContract({
           address: to.messageTransmitter,
           abi: MESSAGE_TRANSMITTER_ABI,
           functionName: "receiveMessage",
           args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
-          chain: undefined,
           account: address,
         });
 
@@ -326,12 +333,16 @@ export function useBridge() {
       setStatusMessage("Minting USDC on " + to.label + "...");
       updateTx({ status: "minting" });
 
-      const mintHash = await walletClient.writeContract({
+      const mintWalletClient = createWalletClient({
+        account: address as `0x${string}`,
+        transport: custom((window as any).ethereum)
+      });
+
+      const mintHash = await mintWalletClient.writeContract({
         address: to.messageTransmitter,
         abi: MESSAGE_TRANSMITTER_ABI,
         functionName: "receiveMessage",
         args: [attResult.message as `0x${string}`, attResult.attestation as `0x${string}`],
-        chain: undefined,
         account: address,
       });
 
