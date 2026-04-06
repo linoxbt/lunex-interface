@@ -1,94 +1,67 @@
-# Welcome to Lunex Finance
+# Lunex Finance
 
-# WHAT IS LUNEX FINANCE
-Lunex Finance is a decentralised exchange protocol built on Arc Network. It uses a Curve-style StableSwap AMM optimised for stablecoin pairs (USDC/EURC), providing near-zero slippage swaps.
+Lunex Finance is a next-generation decentralized application (dApp) that provides an advanced multichain bridge, yield aggregator, and liquidity pool system. Built with cutting-edge web3 tooling, it brings a seamless, secure, and intuitive interface to decentralized finance.
 
-The protocol also offers ERC-4626 yield vaults where users can deposit stablecoins and earn yield automatically.
+## Features
 
-Lunex Finance is currently live on Arc Network Testnet.
-GETTING STARTED
-1. Install MetaMask or any compatible Web3 wallet
+- **Cross-Chain Bridge (CCTP)**: Effortlessly bridge USDC across multiple supported blockchains (Ethereum, Base, Arbitrum, Avalanche, Polygon, Optimism) without slippage via Circle's natively integrated Cross-Chain Transfer Protocol.
+- **Yield Aggregator**: Automatically compound your yields natively via streamlined smart contracts. Claim your accrued LUNEX rewards right from the interface.
+- **Liquidity Pools (LP)**: Provide stablecoin liquidity (e.g., USDC, EURC) to earn real-time swap fees. The transparent pool tracking dashboard estimates your real-time revenue splits seamlessly.
+- **Protocol Statistics**: View live on-chain volume, total value locked (TVL), and liquidity reserve metrics directly synced with Supabase datastores.
+- **Premium User Experience**: Designed to meet high-end aesthetics, Lunex uses dynamic Radix UI components, smooth Framer Motion transitions, responsive TailwindCSS styling, and integrated seamless Light/Dark mode themes.
 
-2. Add Arc Network Testnet to your wallet:
-   • Network Name: Arc Testnet
-   • Chain ID: 5042002
-   • RPC URL: https://rpc.testnet.arc.network
-   • Explorer: https://testnet.arcscan.app
-   • Currency: USDC
+## Technology Stack
 
-3. Get testnet tokens from faucet.circle.com
+- **Frontend**: React (Vite), TypeScript, Tailwind CSS
+- **Web3**: Wagmi, Viem, RainbowKit (Wallet Connection)
+- **Data & State**: React Query (@tanstack), Zustand, Radix UI Primitives
+- **Animations**: Framer Motion
+- **Database / Logs**: Supabase
 
-4. Click "Connect" in the top right corner of Lunex Finance
+## Quickstart & Installation
 
-5. Start swapping, providing liquidity, or depositing into vaults
-SWAP
-The Swap page lets you exchange USDC for EURC and vice versa with minimal slippage.
+**1. Clone the repository**
+```bash
+git clone <repository_url>
+cd lunex-finance
+```
 
-How to swap:
-1. Select the token you want to sell (From)
-2. Enter the amount
-3. The output amount is calculated automatically using live onchain pricing
-4. Review the exchange rate, price impact, and minimum received
-5. Click "Approve" if needed, then "Swap"
+**2. Install dependencies**
+Make sure you have Node installed (v18 or higher recommended).
+```bash
+npm install
+```
 
-Slippage tolerance:
-Click the gear icon to set your slippage tolerance (0.1%, 0.5%, 1.0%, or custom). This determines the minimum amount you'll accept. If the price moves beyond your tolerance, the transaction will revert.
+**3. Run the Development Server**
+```bash
+npm run dev
+```
 
-Price impact:
-• Green (< 0.1%): Excellent, minimal impact
-• Yellow (0.1–1%): Moderate, acceptable for most trades
-• Red (> 1%): High impact, consider reducing trade size
-POOL
-The Pool page lets you provide liquidity to the USDC/EURC StableSwap pool and earn fees from every swap.
+The application will launch on your local host (typically `http://localhost:5173`).
 
-Adding liquidity:
-1. Navigate to Pool → Add Liquidity
-2. Enter USDC and/or EURC amounts (you can add one or both)
-3. Approve each token if prompted
-4. Click "Add Liquidity"
-5. You'll receive LP tokens representing your share of the pool
+## Environment Configuration
 
-Removing liquidity:
-1. Navigate to Pool → Remove Liquidity
-2. Select the percentage of your LP tokens to remove
-3. Choose withdrawal mode: Both tokens, USDC only, or EURC only
-4. Approve your LP tokens if needed
-5. Click "Remove Liquidity"
+Configure your API keys by creating a `.env` file at the root. You will require keys for:
+- RainbowKit (WalletConnect Project ID)
+- Supabase (URL and Anonymous Key)
+- Custom RPC endpoints (Optional, configurable through wagmi configs)
 
-LP tokens represent your proportional share of the pool. As fees accumulate from swaps, your LP tokens become worth more of the underlying assets.
-YIELD VAULTS
-Lunex Finance offers ERC-4626 yield vaults for both USDC and EURC.
+## Architecture
 
-How vaults work:
-• When you deposit USDC into the USDC vault, you receive luneUSDC share tokens
-• When you deposit EURC into the EURC vault, you receive luneEURC share tokens
-• Share tokens represent your claim on the vault's underlying assets
-• As the vault generates yield, each share becomes worth more of the underlying token
+Lunex separates logic efficiently leveraging:
+- `src/features`: Domain-driven component design (e.g., `bridge/`, `yield/`).
+- `src/hooks`: Global custom React hooks serving decentralized reads/writes.
+- `src/components`: Reusable UI elements decoupled from business logic.
+- `src/config`: App-wide constant configurations (e.g., supported chains, wagmi specs).
 
-Depositing:
-1. Go to Yield → select a vault
-2. Enter the amount of USDC or EURC to deposit
-3. Approve the token if needed
-4. Click "Deposit"
+## Deployment
 
-Withdrawing:
-1. Go to Yield → select a vault → Withdraw tab
-2. Enter the amount of underlying tokens you want to withdraw
-3. Click "Withdraw" — your shares will be redeemed automatically
+To deploy onto a staging environment, run:
+```bash
+npm run build
+```
+The output will reside in the `/dist` directory. For one-click deployments, connect the repository to standard CD platforms (like Vercel or Netlify). Vercel plugins are also actively supported.
 
-Share price:
-The share price shows how much underlying token each share is worth. A share price of 1.05 means each share is worth 1.05 of the underlying token.
-BRIDGE
-The Bridge page lets you transfer tokens from other chains to Arc Network.
+## License
 
-Squid Bridge:
-• Cross-chain swaps and bridging powered by Squid Router
-• Swap any token on any supported chain and receive tokens on Arc Network
-• Supports a wide range of source chains and tokens
-
-Quick Fund:
-• Simple wallet funding via thirdweb Pay
-• Top up your Arc wallet quickly from another chain
-• Select Arc Network as the destination
-
-Both options handle the cross-chain complexity for you — just select your source and destination tokens.
+Copyright © 2026 Lunex Finance. All rights reserved.

@@ -1,7 +1,7 @@
 import { Check, Loader2, X, RotateCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type BridgeStatus } from "../state/bridgeState";
-import { getExplorerTxUrl, type BridgeChainKey } from "../config/bridgeConfig";
+import { getExplorerTxUrl, type BridgeChainKey, BRIDGE_CHAINS } from "../config/bridgeConfig";
 
 interface BridgeProgressProps {
   status: BridgeStatus;

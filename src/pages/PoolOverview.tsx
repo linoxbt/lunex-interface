@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,13 +38,18 @@ const PoolOverview = () => {
 
       {isConnected && !pool.isLpBalanceLoading && hasPoolPosition && (
         <div className="border border-border bg-card p-6 mb-4">
-          <h3 className="text-xs font-semibold tracking-wider uppercase mb-4 text-primary">Your Position</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Position</h3>
+            <Button size="sm" onClick={() => setClaimedFees(true)} disabled={claimedFees} className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase">
+               {claimedFees ? "Fees Claimed" : "Claim Fees"}
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border">
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">LP TOKENS</p><p className="text-sm font-bold font-mono">{pool.lpBalance.toFixed(4)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">USDC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userUsdcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">EURC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userEurcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">POOL SHARE</p><p className="text-sm font-bold font-mono">{pool.poolShare.toFixed(4)}%</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES EST.</p><p className="text-sm font-bold font-mono text-green-500">${fmt((userUsdcValue + userEurcValue) * 0.05)}</p></div>
+            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES EST.</p><p className="text-sm font-bold font-mono text-green-500">${claimedFees ? "0.00" : fmt((userUsdcValue + userEurcValue) * 0.05)}</p></div>
           </div>
         </div>
       )}
