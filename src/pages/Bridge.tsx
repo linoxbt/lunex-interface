@@ -73,7 +73,7 @@ const Bridge = () => {
       <div className="container max-w-lg mx-auto py-32 px-4 text-center">
         <BackButton />
         <h1 className="text-3xl font-bold uppercase tracking-tight mb-4 text-primary mt-8">Bridge</h1>
-        <p className="text-sm text-muted-foreground tracking-wider uppercase border border-border bg-card p-6 inline-block">Coming Soon to Mainnet</p>
+        <p className="text-sm text-muted-foreground tracking-wider uppercase border border-border bg-card p-6 inline-block">Coming Soon</p>
       </div>
     );
   }
