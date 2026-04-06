@@ -18,6 +18,7 @@ const POOL_COLUMNS = [
 
 const PoolOverview = () => {
   const { isConnected } = useAccount();
+  const [claimedFees, setClaimedFees] = useState(false);
   const pool = usePoolData();
   const history = useSectionHistory("pool");
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
