@@ -9,6 +9,15 @@ import {
 } from "@/components/ui/select";
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
 
+const chainIcons: Record<string, string> = {
+  ethereum: "🔷",
+  avalanche: "🔺",
+  arbitrum: "🔵",
+  base: "🔵",
+  polygon: "🟣",
+  arc: "✨"
+};
+
 interface ChainSelectorProps {
   fromChain: BridgeChainKey;
   toChain: BridgeChainKey;
@@ -43,7 +52,10 @@ export function ChainSelector({
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== toChain).map((k) => (
               <SelectItem key={k} value={k}>
-                {BRIDGE_CHAINS[k].label}
+                <span className="flex items-center gap-2">
+                  <span>{chainIcons[k]}</span>
+                  <span>{BRIDGE_CHAINS[k].label}</span>
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -75,7 +87,10 @@ export function ChainSelector({
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== fromChain).map((k) => (
               <SelectItem key={k} value={k}>
-                {BRIDGE_CHAINS[k].label}
+                <span className="flex items-center gap-2">
+                  <span>{chainIcons[k]}</span>
+                  <span>{BRIDGE_CHAINS[k].label}</span>
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

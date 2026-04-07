@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
 import { parseUnits, pad, zeroHash, encodeFunctionData, decodeFunctionResult, createPublicClient, http, createWalletClient, custom } from "viem";
+import { toast } from "sonner";
 import {
   BRIDGE_CHAINS,
   TOKEN_MESSENGER_ABI,
@@ -301,6 +302,7 @@ export function useBridge() {
         setStatus("complete");
         setStatusMessage("Bridge complete!");
         updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
+        toast.success("Bridge complete!", { description: "Your USDC has been successfully bridged." });
       } catch (err: any) {
         const msg = err?.shortMessage || err?.message || "Bridge failed";
         setStatus("failed");
@@ -355,6 +357,7 @@ export function useBridge() {
       setStatus("complete");
       setStatusMessage("Bridge complete!");
       updateTx({ status: "complete", mintTxHash: mintHash, attestation: attResult.attestation });
+      toast.success("Bridge complete!", { description: "Your USDC has been successfully bridged." });
     } catch (err: any) {
       const msg = err?.shortMessage || err?.message || "Mint failed";
       setStatus("failed");

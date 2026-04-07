@@ -23,6 +23,7 @@ const Bridge = () => {
   const [fromChain, setFromChain] = useState<BridgeChainKey>("base");
   const [toChain, setToChain] = useState<BridgeChainKey>("arc");
   const [amount, setAmount] = useState("");
+  const [activeTab, setActiveTab] = useState("bridge");
 
   const { balance: sourceBalanceRaw, formatted: sourceBalance, decimals: sourceDecimals, isLoading: balanceLoading } =
     useBridgeBalance(fromChain);
@@ -70,8 +71,8 @@ const Bridge = () => {
 
   if (!import.meta.env.DEV) {
     return (
-      <div className="container max-w-lg mx-auto py-32 px-4 text-center">
-        <BackButton />
+      <div className="container py-32 px-4 text-center">
+        <div className="text-left"><BackButton /></div>
         <div className="border border-border bg-card p-12 mt-8 flex flex-col items-center max-w-md mx-auto">
           <Wallet className="h-12 w-12 text-primary mb-6 opacity-80" />
           <h1 className="text-3xl font-bold uppercase tracking-tight mb-4">Bridge</h1>
@@ -87,14 +88,15 @@ const Bridge = () => {
   }
 
   return (
-    <div className="container max-w-lg mx-auto py-16 px-4">
+    <div className="container max-w-lg mx-auto py-16">
       <BackButton />
-      <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
-      <p className="text-xs text-muted-foreground mb-8 tracking-wider">
-        Bridge USDC across chains via Circle CCTP
-      </p>
+      <div className="mt-4">
+        <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">Bridge</h1>
+        <p className="text-xs text-muted-foreground mb-8 tracking-wider">
+          Bridge USDC across chains via Circle CCTP
+        </p>
 
-      <Tabs defaultValue="bridge" className="mt-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="bridge" className="text-xs font-semibold uppercase tracking-wider">New Bridge</TabsTrigger>
           <TabsTrigger value="history" className="text-xs font-semibold uppercase tracking-wider">History & Resume</TabsTrigger>
@@ -240,6 +242,7 @@ const Bridge = () => {
           <BridgeHistory
             onResume={(tx) => {
               bridge.resumeBridge(tx);
+              setActiveTab("bridge");
               if (tx.status === "waiting_attestation" || tx.status === "burning") {
                 bridge.completeMint();
               }
@@ -247,6 +250,7 @@ const Bridge = () => {
           />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };

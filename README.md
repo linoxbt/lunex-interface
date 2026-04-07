@@ -1,4 +1,7 @@
 # Lunex Finance
+Lunex Finance is a decentralised exchange protocol built on Arc Network. It uses a Curve-style StableSwap AMM optimised for stablecoin pairs (USDC/EURC), providing near-zero slippage swaps.
+
+The protocol also offers ERC-4626 yield vaults where users can deposit stablecoins and earn yield automatically.
 
 Lunex Finance is a next-generation decentralized application (dApp) that provides an advanced multichain bridge, yield aggregator, and liquidity pool system. Built with cutting-edge web3 tooling, it brings a seamless, secure, and intuitive interface to decentralized finance.
 

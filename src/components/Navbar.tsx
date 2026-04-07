@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import { useTheme } from "next-themes";
 import lunexLogo from "@/assets/lunex-logo.png";
 
 const navLinks = [
@@ -19,31 +20,35 @@ const navLinks = [
 const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
       <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center gap-10">
-          <Link to="/" className="inline-flex items-center gap-1">
-            <img src={lunexLogo} alt="LUNEX" className="h-10 w-auto object-contain" />
-            <span className="text-lg font-bold text-foreground tracking-wide uppercase leading-none -ml-2">LUNEX</span>
+        <div className="flex items-center flex-1">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="flex items-center">
+              <img src={lunexLogo} alt="LUNEX" className="h-10 w-auto" />
+            </div>
+            <span className="text-lg font-bold text-foreground tracking-wide uppercase leading-none">LUNEX</span>
           </Link>
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`px-3 py-1.5 text-xs font-semibold tracking-wider transition-colors ${
-                  location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center justify-center gap-1 flex-1">
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`px-3 py-1.5 text-xs font-semibold tracking-wider transition-colors ${
+                location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 flex-1">
           <ThemeSwitcher />
           <ConnectButton.Custom>
             {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {

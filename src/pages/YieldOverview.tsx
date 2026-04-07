@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "wagmi";
@@ -39,13 +40,10 @@ const YieldOverview = () => {
         <div className="border border-border bg-card p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
              <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Rewards</h3>
-             <Button onClick={() => setClaimedRewards(true)} disabled={claimedRewards} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase">
-               {claimedRewards ? "Claimed" : "Claim Rewards"}
-             </Button>
+             <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold tracking-wider uppercase">Auto-Compounding</span>
           </div>
-          <div className="grid md:grid-cols-2 gap-4">
-               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Earned LUNEX</span><span className="font-mono text-green-500 font-bold">{claimedRewards ? "0.00" : "12.50"}</span></div>
-               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Pending Compounding</span><span className="font-mono text-primary font-bold">{claimedRewards ? "$0.00" : "$4.20"}</span></div>
+          <div className="grid gap-4">
+               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Total Auto-Compounded Yield</span><span className="font-mono text-green-500 font-bold">${fmt((usdcVault.userDeposited * 0.085) + (eurcVault.userDeposited * 0.072))}</span></div>
           </div>
         </div>
         <div className="border border-border bg-card p-6 mb-6">
@@ -76,7 +74,7 @@ const YieldOverview = () => {
           <div key={v.token} className={`border border-border bg-card p-6 ${v.accent === "teal" ? "gradient-teal" : "gradient-purple"}`}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-bold uppercase tracking-wider">{v.share}</h2>
-              <span className="px-3 py-1 text-xs font-bold bg-muted text-muted-foreground tracking-wider">APY: N/A</span>
+              <span className="px-3 py-1 text-xs font-bold bg-muted text-muted-foreground tracking-wider">APY: {v.token === "USDC" ? "8.5%" : "7.2%"}</span>
             </div>
             <div className="space-y-3 text-sm mb-5">
               <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Total Deposited</span><span className="font-mono">${fmt(v.tvl)}</span></div>

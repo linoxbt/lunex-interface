@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ const POOL_COLUMNS = [
 
 const PoolOverview = () => {
   const { isConnected } = useAccount();
-  const [claimedFees, setClaimedFees] = useState(false);
   const pool = usePoolData();
   const history = useSectionHistory("pool");
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -41,16 +39,14 @@ const PoolOverview = () => {
         <div className="border border-border bg-card p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Position</h3>
-            <Button size="sm" onClick={() => setClaimedFees(true)} disabled={claimedFees} className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase">
-               {claimedFees ? "Fees Claimed" : "Claim Fees"}
-            </Button>
+            <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold tracking-wider uppercase">Auto-Accruing Fees</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border">
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">LP TOKENS</p><p className="text-sm font-bold font-mono">{pool.lpBalance.toFixed(4)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">USDC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userUsdcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">EURC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userEurcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">POOL SHARE</p><p className="text-sm font-bold font-mono">{pool.poolShare.toFixed(4)}%</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES EST.</p><p className="text-sm font-bold font-mono text-green-500">${claimedFees ? "0.00" : fmt((userUsdcValue + userEurcValue) * 0.05)}</p></div>
+            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES ACCRUED</p><p className="text-sm font-bold font-mono text-green-500">In Pool</p></div>
           </div>
         </div>
       )}
