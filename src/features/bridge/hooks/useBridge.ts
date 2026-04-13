@@ -263,25 +263,27 @@ export function useBridge() {
 
         await fromPublicClient.waitForTransactionReceipt({ hash: burnHash });
 
-        // ── Step 3: Wait for attestation (remain on SOURCE chain) ──
+        // ── Step 3: Switch to DESTINATION chain while waiting for attestation ──
         setStatus("waiting_attestation");
-        setStatusMessage("Waiting for Circle attestation...");
+        setStatusMessage(`Switching to ${to.label}...`);
         updateTx({
           status: "waiting_attestation",
           burnTxHash: burnHash,
         });
 
+        // Prompt user to switch to destination chain immediately after burn
+        await ensureChain(to.chainId, to.label);
+
+        setStatusMessage("Waiting for Circle attestation...");
         const attResult = await attestationV2.startPolling(from.domain, burnHash);
         if (!attResult) {
           throw new Error("Attestation timeout — you can retry minting later from bridge history");
         }
 
-        // ── Step 4: Mint on DESTINATION chain — NOW switch ──
+        // ── Step 4: Mint on DESTINATION chain ──
         setStatus("minting");
-        setStatusMessage("Switch to " + to.label + " to complete mint...");
+        setStatusMessage("Minting USDC on " + to.label + "...");
         updateTx({ status: "minting" });
-
-        await ensureChain(to.chainId, to.label);
 
         const mintWalletClient = createWalletClient({
           account: address as `0x${string}`,

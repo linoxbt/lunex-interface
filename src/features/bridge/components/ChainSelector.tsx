@@ -9,13 +9,17 @@ import {
 } from "@/components/ui/select";
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
 
+import lunexLogo from "@/assets/lunex-logo.png";
+
+const SVGO = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
 const chainIcons: Record<string, string> = {
-  ethereum: "https://icons.llama.fi/chain/ethereum",
-  avalanche: "https://icons.llama.fi/chain/avalanche",
-  arbitrum: "https://icons.llama.fi/chain/arbitrum",
-  base: "https://icons.llama.fi/chain/base",
-  polygon: "https://icons.llama.fi/chain/polygon",
-  arc: "https://lunex.finance/logo.png" // Using protocol logo for Arc Network
+  ethereum: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#627EEA"/><path d="M50 15v34l18-8-18-26zm0 43v26l18-36-18 10zm-18-10l18 8V15L32 48z" fill="#fff"/></svg>`),
+  avalanche: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#E84142"/><path d="M50 25L25 75h15l10-20 10 20h15L50 25z" fill="#fff"/></svg>`),
+  arbitrum: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#28A0F0"/><path d="M50 25L25 75h15l10-20 10 20h15L50 25z" fill="#fff"/></svg>`),
+  base: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0052FF"/><circle cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="12"/></svg>`),
+  polygon: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#8247E5"/><path d="M50 30L30 42v16l20 12 20-12V42L50 30z" fill="#fff"/></svg>`),
+  arc: lunexLogo
 };
 
 interface ChainSelectorProps {
