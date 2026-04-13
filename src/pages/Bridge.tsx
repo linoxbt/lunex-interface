@@ -69,23 +69,6 @@ const Bridge = () => {
   // CCTP is 1:1 for USDC, no fee
   const receiveAmount = amount && parseFloat(amount) > 0 ? parseFloat(amount).toFixed(2) : "";
 
-  if (!import.meta.env.DEV) {
-    return (
-      <div className="container py-32 px-4 text-center">
-        <div className="text-left"><BackButton /></div>
-        <div className="border border-border bg-card p-12 mt-8 flex flex-col items-center max-w-md mx-auto">
-          <Wallet className="h-12 w-12 text-primary mb-6 opacity-80" />
-          <h1 className="text-3xl font-bold uppercase tracking-tight mb-4">Bridge</h1>
-          <div className="inline-block px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-bold tracking-wider uppercase mb-6">
-            Coming Soon
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            We are finalizing our cross-chain routing infrastructure. Multichain bridging via CCTP will be available shortly.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container max-w-lg mx-auto py-16">

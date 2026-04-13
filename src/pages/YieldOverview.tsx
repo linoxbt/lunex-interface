@@ -37,15 +37,7 @@ const YieldOverview = () => {
 
       {isConnected && hasPositions && (
         <>
-        <div className="border border-border bg-card p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-             <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Rewards</h3>
-             <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold tracking-wider uppercase">Auto-Compounding</span>
-          </div>
-          <div className="grid gap-4">
-               <div className="flex justify-between items-center text-sm p-4 border border-border bg-background"><span className="text-muted-foreground text-xs uppercase tracking-wider">Total Auto-Compounded Yield</span><span className="font-mono text-green-500 font-bold">${fmt((usdcVault.userDeposited * 0.085) + (eurcVault.userDeposited * 0.072))}</span></div>
-          </div>
-        </div>
+
         <div className="border border-border bg-card p-6 mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase mb-4 text-primary">Your Vault Positions</h3>
           <div className="grid md:grid-cols-2 gap-4">

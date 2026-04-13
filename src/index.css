@@ -91,7 +91,7 @@
     @apply border-border;
   }
   html {
-    font-size: 14px;
+    font-size: 13px;
   }
   body {
     @apply bg-background text-foreground;

@@ -46,7 +46,7 @@ const PoolOverview = () => {
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">USDC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userUsdcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">EURC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userEurcValue)}</p></div>
             <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">POOL SHARE</p><p className="text-sm font-bold font-mono">{pool.poolShare.toFixed(4)}%</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES ACCRUED</p><p className="text-sm font-bold font-mono text-green-500">In Pool</p></div>
+            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES</p><p className="text-sm font-bold font-mono text-green-500">Auto-Compounding</p></div>
           </div>
         </div>
       )}

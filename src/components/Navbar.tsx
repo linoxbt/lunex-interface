@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Trophy } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -12,6 +13,7 @@ const navLinks = [
   { to: "/pool", label: "POOL" },
   { to: "/yield", label: "YIELD" },
   { to: "/bridge", label: "BRIDGE" },
+  { to: "/points", label: "POINTS", comingSoon: true },
   { to: "/stats", label: "STATS" },
   { to: "/dashboard", label: "DASHBOARD" },
   { to: "/docs", label: "DOCS" },
@@ -36,15 +38,30 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center justify-center gap-1 flex-1">
           {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`px-3 py-1.5 text-xs font-semibold tracking-wider transition-colors ${
-                location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.comingSoon ? (
+              <Tooltip key={link.to}>
+                <TooltipTrigger asChild>
+                  <div className="px-3 py-1.5 text-xs font-semibold tracking-wider text-muted-foreground/50 cursor-help flex items-center gap-1.5 uppercase">
+                    <Trophy className="h-3 w-3" />
+                    {link.label}
+                    <span className="text-[8px] bg-primary/20 text-primary px-1 rounded-sm">SOON</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-[10px] uppercase tracking-widest font-bold">Earn points by swapping, bridging and providing liquidity. Coming Very Soon.</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`px-3 py-1.5 text-xs font-semibold tracking-wider transition-colors uppercase ${
+                  location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
 
@@ -78,16 +95,24 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
           {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className={`block px-3 py-2 text-xs font-semibold tracking-wider ${
-                location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.comingSoon ? (
+              <div key={link.to} className="block px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground/50 flex items-center gap-2 uppercase">
+                <Trophy className="h-3 w-3" />
+                {link.label}
+                <span className="text-[8px] bg-primary/10 text-primary px-1 rounded-sm uppercase tracking-tighter">Coming Soon</span>
+              </div>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className={`block px-3 py-2 text-xs font-semibold tracking-wider uppercase ${
+                  location.pathname.startsWith(link.to) ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
       )}

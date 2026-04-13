@@ -27,6 +27,18 @@ const Landing = () => {
   return (
     <div className="page-fade-in">
       <FaucetBanner />
+      <div className="bg-primary/10 border-b border-primary/20 py-2">
+        <div className="container flex items-center justify-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-primary">
+            Lunex Bridge is now LIVE — Move USDC cross-chain with CCTP
+          </p>
+          <Link to="/bridge" className="text-[10px] font-bold uppercase underline hover:text-primary transition-colors ml-2">Try Now</Link>
+        </div>
+      </div>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="container relative py-28 md:py-40 text-center">
