@@ -217,7 +217,7 @@ const Bridge = () => {
                onResume={(tx) => {
                  bridge.resumeBridge(tx);
                  setActiveTab("bridge");
-                 if (tx.status === "waiting_attestation" || tx.status === "burning") {
+                 if (tx.status === "waiting_attestation" || tx.status === "burning" || tx.status === "failed") {
                    bridge.completeMint();
                  }
                }}

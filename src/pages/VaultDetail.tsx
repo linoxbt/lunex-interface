@@ -21,6 +21,7 @@ const VaultDetail = () => {
   const tokenName = (isUSDC ? "USDC" : "EURC") as "USDC" | "EURC";
   const shareName = isUSDC ? "luneUSDC" : "luneEURC";
   const vaultAddress = isUSDC ? CONTRACTS.LUNE_VAULT_USDC : CONTRACTS.LUNE_VAULT_EURC;
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();

@@ -10,11 +10,11 @@ import {
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
 
 const chainIcons: Record<string, string> = {
-  ethereum: "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=024",
-  avalanche: "https://cryptologos.cc/logos/avalanche-avax-logo.svg?v=024",
-  arbitrum: "https://cryptologos.cc/logos/arbitrum-arb-logo.svg?v=024",
-  base: "https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/base-logo-symbol-color.svg",
-  polygon: "https://cryptologos.cc/logos/polygon-matic-logo.svg?v=024",
+  ethereum: "https://icons.llama.fi/chain/ethereum",
+  avalanche: "https://icons.llama.fi/chain/avalanche",
+  arbitrum: "https://icons.llama.fi/chain/arbitrum",
+  base: "https://icons.llama.fi/chain/base",
+  polygon: "https://icons.llama.fi/chain/polygon",
   arc: "https://lunex.finance/logo.png" // Using protocol logo for Arc Network
 };
 

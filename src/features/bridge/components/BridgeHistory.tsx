@@ -38,8 +38,9 @@ function StatusIcon({ status }: { status: BridgeStatus }) {
   return <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />;
 }
 
-function isResumable(status: BridgeStatus) {
-  return status === "waiting_attestation" || status === "burning";
+function isResumable(tx: BridgeTransaction) {
+  if (tx.status === "complete") return false;
+  return tx.status === "waiting_attestation" || tx.status === "burning" || !!tx.burnTxHash;
 }
 
 export function BridgeHistory({ onResume }: BridgeHistoryProps) {
@@ -89,7 +90,7 @@ export function BridgeHistory({ onResume }: BridgeHistoryProps) {
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
-              {isResumable(tx.status) && (
+              {isResumable(tx) && (
                 <Button
                   size="sm"
                   variant="outline"
