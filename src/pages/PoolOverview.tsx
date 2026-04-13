@@ -25,75 +25,95 @@ const PoolOverview = () => {
   const userEurcValue = pool.lpTotalSupply > 0 ? (pool.lpBalance / pool.lpTotalSupply) * pool.eurcReserve : 0;
 
   return (
-    <div className="container max-w-2xl mx-auto py-16">
-      <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Pool</h1>
+    <div className="container max-w-4xl mx-auto py-16 px-4">
+      <div className="mb-10">
+        <BackButton />
+        <h1 className="text-3xl font-bold tracking-tight mt-6 uppercase">Liquidity Positions</h1>
+        <p className="text-muted-foreground text-sm font-mono mt-1">Manage your StableSwap LP units and accrued fees</p>
+      </div>
 
-      {isConnected && pool.isLpBalanceLoading && (
-        <div className="mb-4 border border-border bg-card p-6">
-          <p className="text-xs text-muted-foreground tracking-wider uppercase">Loading your pool position...</p>
-        </div>
+      {isConnected && (
+         <div className="mb-12">
+            {!pool.isLpBalanceLoading && hasPoolPosition ? (
+               <div className="border border-border bg-card rounded-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border bg-muted/30 flex justify-between items-center">
+                     <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Your Active Position</span>
+                     <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[8px] font-bold tracking-widest uppercase">Auto-Compounding Enabled</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border">
+                     <div className="p-6">
+                        <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">LP Units</p>
+                        <p className="text-xl font-bold font-mono">{pool.lpBalance.toFixed(4)}</p>
+                     </div>
+                     <div className="p-6">
+                        <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Share Value</p>
+                        <p className="text-xl font-bold font-mono">${fmt(userUsdcValue + userEurcValue)}</p>
+                        <p className="text-[8px] text-muted-foreground font-mono mt-1">{fmt(userUsdcValue)} USDC + {fmt(userEurcValue)} EURC</p>
+                     </div>
+                     <div className="p-6">
+                        <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Pool Share</p>
+                        <p className="text-xl font-bold font-mono">{pool.poolShare.toFixed(4)}%</p>
+                     </div>
+                     <div className="p-6 bg-primary/5">
+                        <p className="text-[8px] text-primary font-bold uppercase tracking-widest mb-1">Fee Accumulation</p>
+                        <p className="text-sm font-bold font-mono text-green-500 uppercase">Automatic</p>
+                     </div>
+                  </div>
+               </div>
+            ) : !pool.isLpBalanceLoading ? (
+               <div className="border border-border bg-card rounded-sm"><EmptyState variant="pool" title="No active pool position" description="Provide liquidity to the USDC/EURC pair to earn protocol fees automatically." action={<Link to="/pool/add"><Button size="sm" className="gap-2 bg-primary text-primary-foreground font-bold tracking-widest uppercase text-[10px]"><Plus className="h-3 w-3" /> Add Liquidity</Button></Link>} /></div>
+            ) : (
+               <div className="h-40 flex items-center justify-center border border-border bg-card rounded-sm"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            )}
+         </div>
       )}
 
-      {isConnected && !pool.isLpBalanceLoading && hasPoolPosition && (
-        <div className="border border-border bg-card p-6 mb-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-semibold tracking-wider uppercase text-primary">Your Position</h3>
-            <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold tracking-wider uppercase">Auto-Accruing Fees</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border">
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">LP TOKENS</p><p className="text-sm font-bold font-mono">{pool.lpBalance.toFixed(4)}</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">USDC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userUsdcValue)}</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">EURC VALUE</p><p className="text-sm font-bold font-mono">{fmt(userEurcValue)}</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">POOL SHARE</p><p className="text-sm font-bold font-mono">{pool.poolShare.toFixed(4)}%</p></div>
-            <div className="p-4 bg-background"><p className="text-xs text-muted-foreground tracking-wider">FEES</p><p className="text-sm font-bold font-mono text-green-500">Auto-Compounding</p></div>
-          </div>
-        </div>
-      )}
+      {/* Pool Stats */}
+      <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase mb-6 text-muted-foreground border-b border-border pb-4">USDC / EURC Protocol Pool</h3>
+      <div className="grid lg:grid-cols-3 gap-8">
+         <div className="lg:col-span-2 space-y-4">
+            <div className="border border-border bg-card rounded-sm p-8">
+               <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                     <div className="flex -space-x-2">
+                        <div className="h-8 w-8 rounded-full bg-primary border-2 border-card flex items-center justify-center text-[10px] font-bold">U</div>
+                        <div className="h-8 w-8 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[10px] font-bold">E</div>
+                     </div>
+                     <div>
+                        <h2 className="text-xl font-bold">USDC-EURC</h2>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">StableSwap · Fee {pool.feePercent}%</p>
+                     </div>
+                  </div>
+                  <div className="flex gap-2">
+                     <Link to="/pool/add"><Button size="sm" className="bg-primary text-primary-foreground font-bold tracking-widest uppercase text-[10px] px-6">Add</Button></Link>
+                     <Link to="/pool/remove"><Button variant="outline" size="sm" className="border-border font-bold tracking-widest uppercase text-[10px] px-6">Remove</Button></Link>
+                  </div>
+               </div>
 
-      {isConnected && !pool.isLpBalanceLoading && !hasPoolPosition && (
-        <div className="mb-4 border border-border bg-card">
-          <EmptyState variant="pool" title="No active pool position" description="Deposit USDC and EURC to earn swap fees." action={<Link to="/pool/add"><Button size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase"><Plus className="h-3.5 w-3.5" /> Add Liquidity</Button></Link>} />
-        </div>
-      )}
-
-      {!isConnected && (
-        <div className="mb-4 border border-border bg-card">
-          <EmptyState variant="deposits" title="Wallet not connected" description="Connect your wallet to see your liquidity position." />
-        </div>
-      )}
-
-      <div className="border border-border bg-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-bold uppercase tracking-wider">USDC / EURC</h2>
-            <p className="text-xs text-muted-foreground tracking-wider uppercase">LunexSwapPool · Fee: {pool.feePercent}%</p>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/pool/add"><Button size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase"><Plus className="h-3.5 w-3.5" /> Add</Button></Link>
-            <Link to="/pool/remove"><Button size="sm" variant="outline" className="gap-1.5 border-border text-xs font-semibold tracking-wider uppercase"><Minus className="h-3.5 w-3.5" /> Remove</Button></Link>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
-          {[
-            { label: "USDC RESERVE", value: fmt(pool.usdcReserve) },
-            { label: "EURC RESERVE", value: fmt(pool.eurcReserve) },
-            { label: "TOTAL LIQUIDITY", value: `$${fmt(pool.totalLiquidity)}` },
-            { label: "LP SUPPLY", value: pool.lpTotalSupply.toFixed(2) },
-          ].map((stat) => (
-            <div key={stat.label} className="p-4 bg-background">
-              <p className="text-xs text-muted-foreground mb-1 tracking-wider">{stat.label}</p>
-              <p className="text-sm font-bold text-foreground font-mono">{stat.value}</p>
+               <div className="grid grid-cols-2 gap-px bg-border border border-border">
+                  {[
+                     { label: "USDC RESERVES", value: fmt(pool.usdcReserve) },
+                     { label: "EURC RESERVES", value: fmt(pool.eurcReserve) },
+                     { label: "TOTAL LIQUIDITY", value: `$${fmt(pool.totalLiquidity)}` },
+                     { label: "TOTAL LP SUPPLY", value: fmt(pool.lpTotalSupply) },
+                  ].map((stat) => (
+                     <div key={stat.label} className="p-6 bg-background">
+                        <p className="text-[8px] text-muted-foreground font-bold mb-1 tracking-widest uppercase">{stat.label}</p>
+                        <p className="text-lg font-bold font-mono">{stat.value}</p>
+                     </div>
+                  ))}
+               </div>
             </div>
-          ))}
-        </div>
-      </div>
+         </div>
 
-      <div className="mt-4 border border-border bg-card p-5">
-        <h3 className="text-xs font-semibold tracking-wider uppercase mb-4">Pool History</h3>
-        <SectionHistory transactions={history.transactions} columns={POOL_COLUMNS} section="pool" />
+         <div className="space-y-4">
+            <div className="border border-border bg-card rounded-sm p-6">
+               <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 border-b border-border pb-2">Pool History</h4>
+               <SectionHistory transactions={history.transactions} columns={POOL_COLUMNS} section="pool" />
+            </div>
+         </div>
       </div>
-    </div>
+    </div>>
   );
 };
 

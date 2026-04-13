@@ -27,7 +27,7 @@ const Landing = () => {
   return (
     <div className="page-fade-in">
       <FaucetBanner />
-      <div className="bg-primary/10 border-b border-primary/20 py-2">
+      <div className="bg-primary/5 border-b border-primary/20 py-2.5 mt-2 transition-all hover:bg-primary/10">
         <div className="container flex items-center justify-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>

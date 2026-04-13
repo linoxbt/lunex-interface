@@ -31,58 +31,91 @@ const YieldOverview = () => {
   const [claimedRewards, setClaimedRewards] = useState(false);
 
   return (
-    <div className="container max-w-3xl mx-auto py-16">
-      <BackButton />
-      <h1 className="text-3xl font-bold uppercase tracking-tight mb-8">Yield Vaults</h1>
+    <div className="container max-w-5xl mx-auto py-16 px-4">
+      <div className="mb-10">
+        <BackButton />
+        <h1 className="text-3xl font-bold tracking-tight mt-6 uppercase">Yield Vaults</h1>
+        <p className="text-muted-foreground text-sm font-mono mt-1">Institutional auto-compounding ERC-4626 standard strategies</p>
+      </div>
 
-      {isConnected && hasPositions && (
-        <>
-
-        <div className="border border-border bg-card p-6 mb-6">
-          <h3 className="text-xs font-semibold tracking-wider uppercase mb-4 text-primary">Your Vault Positions</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {vaults.filter(v => v.userShares > 0).map(v => (
-              <div key={v.token} className="p-4 border border-border bg-background space-y-2">
-                <p className="text-xs font-semibold tracking-wider uppercase">{v.share}</p>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground text-xs">Shares</span><span className="font-mono">{v.userShares.toFixed(4)}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground text-xs">Value</span><span className="font-mono">${fmt(v.userDeposited)}</span></div>
-                <p className="text-xs text-muted-foreground">{v.userShares.toFixed(4)} {v.share} = {fmt(v.userDeposited)} {v.token}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        </>
+      {isConnected && (
+         <div className="mb-12">
+            {hasPositions ? (
+               <div className="border border-border bg-card rounded-sm overflow-hidden shadow-sm">
+                  <div className="px-6 py-4 border-b border-border bg-muted/30 flex justify-between items-center">
+                     <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Your Yield Distribution</span>
+                     <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[8px] font-bold tracking-widest uppercase">Auto-Compounding</span>
+                  </div>
+                  <div className="grid md:grid-cols-2 divide-x divide-border">
+                     {vaults.filter(v => v.userShares > 0).map(v => (
+                        <div key={v.token} className="p-8 space-y-4">
+                           <div className="flex items-center gap-3">
+                              <div className={`h-8 w-8 rounded-full border border-border flex items-center justify-center font-bold text-xs ${v.accent === "teal" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{v.token[0]}</div>
+                              <div>
+                                 <h4 className="text-lg font-bold">{v.share}</h4>
+                                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Active Position</p>
+                              </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                 <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Shares</p>
+                                 <p className="text-sm font-bold font-mono">{v.userShares.toFixed(6)}</p>
+                              </div>
+                              <div>
+                                 <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Estimated Value</p>
+                                 <p className="text-sm font-bold font-mono">${fmt(v.userDeposited)}</p>
+                              </div>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            ) : (
+               <div className="border border-border bg-card rounded-sm"><EmptyState variant="deposits" title="No active yield positions" description="Initialize a position in one of our auto-compounding vaults to begin earning standard protocol yield." /></div>
+            )}
+         </div>
       )}
 
-      {isConnected && !hasPositions && (
-        <div className="mb-6 border border-border bg-card"><EmptyState variant="deposits" title="No active yield positions" description="Deposit USDC or EURC into vaults to start earning." /></div>
-      )}
-      {!isConnected && (
-        <div className="mb-6 border border-border bg-card"><EmptyState variant="deposits" title="Connect your wallet" description="Connect your wallet to view vault positions." /></div>
-      )}
-
-      <div className="grid md:grid-cols-2 gap-4">
+      <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase mb-6 text-muted-foreground border-b border-border pb-4">Standardized Strategy Index</h3>
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
         {vaults.map((v) => (
-          <div key={v.token} className={`border border-border bg-card p-6 ${v.accent === "teal" ? "gradient-teal" : "gradient-purple"}`}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider">{v.share}</h2>
-              <span className="px-3 py-1 text-xs font-bold bg-muted text-muted-foreground tracking-wider">APY: {v.token === "USDC" ? "8.5%" : "7.2%"}</span>
+          <div key={v.token} className="border border-border bg-card rounded-sm p-8 shadow-sm relative overflow-hidden group hover:border-primary/50 transition-colors">
+            <div className={`absolute top-0 right-0 w-32 h-32 opacity-[0.03] rotate-45 transform translate-x-12 -translate-y-12 transition-all group-hover:opacity-[0.05] ${v.accent === "teal" ? "bg-primary" : "bg-secondary"}`} />
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold">{v.share}</h2>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">ERC-4626 Vault</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-primary font-mono">{v.token === "USDC" ? "8.50%" : "7.20%"} APY</p>
+                <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Standard Return</p>
+              </div>
             </div>
-            <div className="space-y-3 text-sm mb-5">
-              <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Total Deposited</span><span className="font-mono">${fmt(v.tvl)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Share Price</span><span className="font-mono">1 = {v.sharePrice.toFixed(6)} {v.token}</span></div>
+            
+            <div className="grid grid-cols-2 gap-px bg-border border border-border mb-8">
+               <div className="p-4 bg-background text-center font-mono">
+                  <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Pool TVL</p>
+                  <p className="text-sm font-bold">${fmt(v.tvl)}</p>
+               </div>
+               <div className="p-4 bg-background text-center font-mono">
+                  <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Share Price</p>
+                  <p className="text-sm font-bold">{v.sharePrice.toFixed(6)}</p>
+               </div>
             </div>
+
             <div className="flex gap-2">
-              <Link to={v.route} className="flex-1"><Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase" size="sm">Deposit</Button></Link>
-              <Link to={v.route} className="flex-1"><Button variant="outline" className="w-full border-border text-xs font-semibold tracking-wider uppercase" size="sm">Withdraw</Button></Link>
+              <Link to={v.route} className="flex-1"><Button className="w-full h-11 bg-primary text-primary-foreground font-bold tracking-widest uppercase text-[10px]">Deposit</Button></Link>
+              <Link to={v.route} className="flex-1"><Button variant="outline" className="w-full h-11 border-border font-bold tracking-widest uppercase text-[10px]">Withdraw</Button></Link>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 border border-border bg-card p-5">
-        <h3 className="text-xs font-semibold tracking-wider uppercase mb-4">Yield History</h3>
-        <SectionHistory transactions={history.transactions} columns={YIELD_COLUMNS} section="yield" />
+      <div className="mt-12">
+         <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase mb-6 text-muted-foreground border-b border-border pb-4">Vault Activity history</h3>
+         <div className="bg-card border border-border rounded-sm overflow-hidden">
+            <SectionHistory transactions={history.transactions} columns={YIELD_COLUMNS} section="yield" />
+         </div>
       </div>
     </div>
   );

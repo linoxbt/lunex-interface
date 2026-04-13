@@ -85,93 +85,149 @@ const Swap = () => {
   const impactColor = swap.priceImpact < 0.1 ? "text-green" : swap.priceImpact < 1 ? "text-yellow-400" : "text-destructive";
 
   return (
-    <div className="container max-w-lg mx-auto py-16">
-      <BackButton />
-      {isConnected && (
-        <div className="grid grid-cols-2 gap-px bg-border mb-6">
-          <div className="p-4 bg-card">
-            <p className="text-xs text-muted-foreground tracking-wider">USDC BALANCE</p>
-            <p className="text-sm font-bold font-mono">{balances.USDC.formatted}</p>
-          </div>
-          <div className="p-4 bg-card">
-            <p className="text-xs text-muted-foreground tracking-wider">EURC BALANCE</p>
-            <p className="text-sm font-bold font-mono">{balances.EURC.formatted}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold uppercase tracking-tight">Swap</h1>
-        <button onClick={() => setShowSlippage(!showSlippage)} className="text-muted-foreground hover:text-foreground transition-colors">
-          <Settings className="h-5 w-5" />
-        </button>
+    <div className="container max-w-lg mx-auto py-16 px-4">
+      <div className="mb-8">
+        <BackButton />
+        <h1 className="text-3xl font-bold tracking-tight mt-6">Swap Assets</h1>
+        <p className="text-muted-foreground text-sm font-mono mt-1">Institutional-grade StableSwap efficiency</p>
       </div>
 
-      {showSlippage && (
-        <div className="mb-4 p-4 border border-border bg-card">
-          <p className="text-xs text-muted-foreground mb-2 tracking-wider uppercase">Slippage Tolerance</p>
-          <div className="flex gap-2">
-            {slippageOptions.map((opt) => (
-              <button key={opt} onClick={() => setSlippage(opt)} className={`px-3 py-1.5 text-sm border transition-colors ${slippage === opt ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>{opt}%</button>
-            ))}
-            <input type="text" placeholder="Custom" className="w-20 px-3 py-1.5 text-sm border border-border bg-background text-foreground placeholder:text-muted-foreground" onChange={(e) => setSlippage(e.target.value)} />
+      {isConnected && (
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="p-4 border border-border bg-card rounded-sm">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">USDC Available</p>
+            <p className="text-lg font-bold font-mono">{balances.USDC.formatted}</p>
+          </div>
+          <div className="p-4 border border-border bg-card rounded-sm">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">EURC Available</p>
+            <p className="text-lg font-bold font-mono">{balances.EURC.formatted}</p>
           </div>
         </div>
       )}
 
-      <div className="border border-border bg-card overflow-visible">
-        <div className="p-5">
-          <p className="text-xs text-muted-foreground mb-3 tracking-wider uppercase">You Pay</p>
-          <div className="flex items-center gap-3">
-            <input type="number" placeholder="0.00" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} disabled={!isConnected}
-              className="flex-1 bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono disabled:opacity-50 min-w-0" />
+      <div className="border border-border bg-card rounded-sm overflow-visible shadow-sm">
+        <div className="p-6 border-b border-border flex justify-between items-center">
+           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Market Swap</span>
+           <button onClick={() => setShowSlippage(!showSlippage)} className="text-muted-foreground hover:text-primary transition-colors">
+             <Settings className="h-4 w-4" />
+           </button>
+        </div>
+
+        {showSlippage && (
+          <div className="p-6 bg-muted/30 border-b border-border animate-in fade-in duration-200">
+            <p className="text-[10px] text-muted-foreground mb-3 font-bold uppercase tracking-widest">Slippage Tolerance</p>
+            <div className="flex gap-2">
+              {slippageOptions.map((opt) => (
+                <button 
+                  key={opt} 
+                  onClick={() => setSlippage(opt)} 
+                  className={`px-3 py-1.5 text-xs font-bold border transition-all ${slippage === opt ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50"}`}
+                >
+                  {opt}%
+                </button>
+              ))}
+              <input 
+                type="text" 
+                placeholder="Custom" 
+                className="w-full px-3 py-1.5 text-xs border border-border bg-background font-mono outline-none focus:border-primary transition-colors"
+                onChange={(e) => setSlippage(e.target.value)} 
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="p-6">
+          <div className="flex justify-between items-end mb-3">
+             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">From</p>
+             <p className="text-[10px] text-muted-foreground font-mono">Balance: {bal?.isLoading ? "..." : bal?.formatted ?? "0.00"}</p>
+          </div>
+          <div className="flex items-center gap-4 bg-muted/20 p-4 border border-border rounded-sm group hover:border-primary/30 transition-colors">
+            <input 
+              type="number" 
+              placeholder="0.00" 
+              value={fromAmount} 
+              onChange={(e) => setFromAmount(e.target.value)} 
+              disabled={!isConnected}
+              className="flex-1 bg-transparent text-3xl font-bold text-foreground outline-none placeholder:text-muted-foreground/20 font-mono disabled:opacity-50 min-w-0" 
+            />
             <TokenSelector selected={fromToken} onSelect={(t) => { if (t.symbol === toToken.symbol) setToToken(fromToken); setFromToken(t); }} />
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-muted-foreground font-mono">Balance: {bal?.isLoading ? "..." : bal?.formatted ?? "0.00"}</p>
-            {isConnected && <button onClick={() => setFromAmount(bal?.balance?.formatted ?? "")} className="text-[10px] text-primary font-semibold uppercase tracking-wider hover:underline">Max</button>}
+          <div className="flex justify-end mt-2">
+            {isConnected && <button onClick={() => setFromAmount(bal?.balance?.formatted ?? "")} className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline">Select Max</button>}
           </div>
         </div>
 
         <div className="flex justify-center -my-4 relative z-10">
-          <button onClick={flipTokens} className="h-9 w-9 border border-border bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all hover:rotate-180 duration-300">
+          <button 
+            onClick={flipTokens} 
+            className="h-10 w-10 border border-border bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all hover:scale-110 shadow-sm"
+          >
             <ArrowDownUp className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="p-5 bg-muted/20">
-          <p className="text-xs text-muted-foreground mb-3 tracking-wider uppercase">You Receive</p>
-          <div className="flex items-center gap-3">
-            <input type="text" placeholder="0.00" value={toAmountFormatted} readOnly className="flex-1 bg-transparent text-3xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono min-w-0" />
+        <div className="p-6 pt-8">
+          <div className="flex justify-between items-end mb-3">
+             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">To (Estimated)</p>
+          </div>
+          <div className="flex items-center gap-4 bg-muted/20 p-4 border border-border rounded-sm group hover:border-primary/30 transition-colors">
+            <input 
+              type="text" 
+              placeholder="0.00" 
+              value={toAmountFormatted} 
+              readOnly 
+              className="flex-1 bg-transparent text-3xl font-bold text-foreground outline-none placeholder:text-muted-foreground/20 font-mono min-w-0" 
+            />
             <TokenSelector selected={toToken} onSelect={(t) => { if (t.symbol === fromToken.symbol) setFromToken(toToken); setToToken(t); }} />
           </div>
         </div>
-      </div>
 
-      {fromAmount && swap.outputAmount > 0 && (
-        <div className="mt-3 p-4 border border-border bg-card text-sm space-y-2">
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Rate</span><span className="text-foreground font-mono text-xs">1 {fromToken.symbol} = {swap.spotRate.toFixed(4)} {toToken.symbol}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Price Impact</span><span className={`font-mono text-xs ${impactColor}`}>{swap.priceImpact.toFixed(4)}%</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Min Received</span><span className="text-foreground font-mono text-xs">{minReceived} {toToken.symbol}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Slippage</span><span className="text-foreground font-mono text-xs">{slippage}%</span></div>
+        {fromAmount && swap.outputAmount > 0 && (
+          <div className="px-6 py-4 bg-muted/10 border-t border-border space-y-3">
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-muted-foreground">Exchange Rate</span>
+              <span className="font-mono text-foreground">1 {fromToken.symbol} = {swap.spotRate.toFixed(4)} {toToken.symbol}</span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-muted-foreground">Price Impact</span>
+              <span className={`font-mono ${impactColor}`}>{swap.priceImpact.toFixed(4)}%</span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-muted-foreground">Min. Received</span>
+              <span className="font-mono text-foreground">{minReceived} {toToken.symbol}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="p-6 border-t border-border">
+          <Button 
+            className="w-full h-14 text-sm font-bold tracking-[0.2em] uppercase bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98]" 
+            onClick={handleClick} 
+            disabled={swap.isBusy || hasInsufficientBalance || parsedFromAmount <= 0n}
+          >
+            {swap.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
+            {getButtonText()}
+          </Button>
         </div>
-      )}
-
-      <Button className="w-full mt-4 h-12 text-sm font-semibold tracking-wider uppercase bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleClick} disabled={swap.isBusy || hasInsufficientBalance || parsedFromAmount <= 0n}>
-        {swap.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-        {getButtonText()}
-      </Button>
-
-      <div className="mt-8 border border-border bg-card p-5">
-        <h3 className="text-xs font-semibold tracking-wider uppercase mb-4">Swap History</h3>
-        <SectionHistory transactions={history.transactions} columns={SWAP_COLUMNS} section="swap" />
       </div>
 
-      <TransactionModal stage={txStage} approveLabel={`Approve ${fromAmount} ${fromToken.symbol}`}
-        actionLabel={`Swap ${fromAmount} ${fromToken.symbol} → ${toToken.symbol}`}
-        successSummary={`Swapped ${fromAmount} ${fromToken.symbol} → ${swap.outputAmount.toFixed(2)} ${toToken.symbol}`}
-        txHash={swap.swapTxHash || swap.approveTxHash} errorMessage={(swap.swapError || swap.approveError)?.message}
-        onClose={handleModalClose} onRetry={() => swap.resetAll()} />
+      <div className="mt-12">
+        <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase mb-6 text-muted-foreground border-b border-border pb-4">Transaction History</h3>
+        <div className="bg-card border border-border rounded-sm overflow-hidden shadow-sm">
+          <SectionHistory transactions={history.transactions} columns={SWAP_COLUMNS} section="swap" />
+        </div>
+      </div>
+
+      <TransactionModal 
+        stage={txStage} 
+        approveLabel={`Authorize ${fromToken.symbol}`}
+        actionLabel={`Swap ${fromAmount} ${fromToken.symbol}`}
+        successSummary={`Successfully swapped for ${swap.outputAmount.toFixed(2)} ${toToken.symbol}`}
+        txHash={swap.swapTxHash || swap.approveTxHash} 
+        errorMessage={(swap.swapError || swap.approveError)?.message}
+        onClose={handleModalClose} 
+        onRetry={() => swap.resetAll()} 
+      />
     </div>
   );
 };

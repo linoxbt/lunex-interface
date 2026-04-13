@@ -149,74 +149,103 @@ const VaultDetail = () => {
   };
 
   return (
-    <div className="container max-w-md mx-auto py-16">
-      <BackButton />
-      <h1 className="text-2xl font-bold uppercase tracking-tight mb-1">{shareName} Vault</h1>
-      <p className="text-xs text-muted-foreground mb-8 tracking-wider uppercase">
-        APY: <span className="font-mono">—</span> · Share Price: 1 {shareName} = {vault.sharePrice.toFixed(6)} {tokenName}
-      </p>
+    <div className="container max-w-lg mx-auto py-16 px-4">
+      <div className="mb-8">
+        <BackButton />
+        <h1 className="text-3xl font-bold tracking-tight mt-6 uppercase">{shareName} Vault</h1>
+        <p className="text-muted-foreground text-sm font-mono mt-1">Institutional strategy for {tokenName} capital growth</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+         <div className="p-4 border border-border bg-card rounded-sm text-center">
+            <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Standard APY</p>
+            <p className="text-lg font-bold font-mono text-primary">{tokenName === "USDC" ? "8.50%" : "7.20%"}</p>
+         </div>
+         <div className="p-4 border border-border bg-card rounded-sm text-center">
+            <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Share Valuation</p>
+            <p className="text-sm font-bold font-mono">{vault.sharePrice.toFixed(6)} {tokenName}</p>
+         </div>
+      </div>
 
       {isConnected && vault.userShares > 0 && (
-        <div className="border border-border bg-card p-4 mb-6">
-          <p className="text-xs text-muted-foreground tracking-wider uppercase mb-2">Your Position</p>
-          <p className="text-sm font-mono">{vault.userShares.toFixed(6)} {shareName} = {vault.userDeposited.toFixed(2)} {tokenName}</p>
+        <div className="border border-primary/20 bg-primary/5 p-6 mb-8 rounded-sm flex justify-between items-center">
+           <div>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Active Position</p>
+              <p className="text-xl font-bold font-mono text-primary mt-1">${fmt(vault.userDeposited)}</p>
+           </div>
+           <div className="text-right">
+              <p className="text-[8px] text-primary/60 font-bold uppercase tracking-widest">Shares Held</p>
+              <p className="text-xs font-bold font-mono text-primary">{vault.userShares.toFixed(6)}</p>
+           </div>
         </div>
       )}
 
-      <div className="flex gap-px bg-border mb-6">
-        {(["deposit", "withdraw"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setTab(t);
-              setAmount("");
-            }}
-            className={`flex-1 py-2.5 text-xs font-semibold tracking-wider uppercase transition-colors ${tab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <div className="border border-border bg-card p-6 space-y-4">
-        <div className="p-4 bg-muted/20 border border-border">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-muted-foreground text-xs uppercase tracking-wider">{tokenName} Amount</span>
-            <button onClick={handleMax} className="text-xs text-primary hover:underline font-mono">
-              Max: {tab === "deposit" ? (balance.isLoading ? "..." : balance.formatted) : vault.userDeposited.toFixed(2)}
+      <div className="border border-border bg-card rounded-sm shadow-sm overflow-hidden">
+        <div className="flex bg-muted/20 border-b border-border">
+          {(["deposit", "withdraw"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setTab(t);
+                setAmount("");
+              }}
+              className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              {t}
             </button>
-          </div>
-          <input
-            type="number"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={!isConnected}
-            className="w-full bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono disabled:opacity-50"
-          />
+          ))}
         </div>
 
-        {tab === "withdraw" && (
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-mono">
-            Available to withdraw: {vault.userShares.toFixed(6)} {shareName} = {vault.userDeposited.toFixed(2)} {tokenName}
-          </p>
-        )}
+        <div className="p-8 space-y-8">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{tokenName} Allocation</span>
+              <button 
+                onClick={handleMax} 
+                className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline"
+              >
+                Set Maximum: {tab === "deposit" ? (balance.isLoading ? "..." : balance.formatted) : vault.userDeposited.toFixed(2)}
+              </button>
+            </div>
+            <div className="relative group">
+               <input
+                 type="number"
+                 placeholder="0.00"
+                 value={amount}
+                 onChange={(e) => setAmount(e.target.value)}
+                 disabled={!isConnected}
+                 className="w-full bg-muted/10 border border-border h-16 px-4 text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/20 font-mono disabled:opacity-50 rounded-sm focus:border-primary transition-colors"
+               />
+               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold font-mono text-muted-foreground">{tokenName}</div>
+            </div>
+          </div>
 
-        <div className="p-4 border border-border space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground text-xs uppercase tracking-wider">{tab === "deposit" ? "You receive" : "Shares to redeem"}</span>
-            <span className="font-mono">{tab === "deposit" ? `${preview} ${shareName}` : `${parseFloat(withdrawSharesStr).toFixed(6)} ${shareName}`}</span>
+          <div className="p-6 bg-muted/10 border border-border rounded-sm space-y-3">
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-muted-foreground">{tab === "deposit" ? "Estimated Receipt" : "Shares to burn"}</span>
+              <span className="font-mono text-foreground">{tab === "deposit" ? `${preview} ${shareName}` : `${parseFloat(withdrawSharesStr).toFixed(6)} Units`}</span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-muted-foreground">Settlement Asset</span>
+              <span className="font-mono text-foreground">{tokenName} (Standard)</span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground text-xs uppercase tracking-wider">Share Price</span>
-            <span className="font-mono">1 {shareName} = {vault.sharePrice.toFixed(6)} {tokenName}</span>
-          </div>
+
+          <Button 
+            className="w-full h-14 bg-primary text-primary-foreground font-bold uppercase tracking-[0.2em] text-sm shadow-sm active:scale-[0.98] transition-all" 
+            onClick={handleClick} 
+            disabled={active.isBusy || parsedInputAmount <= 0n || hasInsufficientBalance}
+          >
+            {active.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
+            {getButtonText()}
+          </Button>
         </div>
-
-        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 uppercase text-xs font-semibold tracking-wider" onClick={handleClick} disabled={active.isBusy || parsedInputAmount <= 0n || hasInsufficientBalance}>
-          {active.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          {getButtonText()}
-        </Button>
+        
+        <div className="p-4 bg-muted/20 border-t border-border text-center">
+           <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed">
+              ERC-4626 standard compliant yield generation protocol
+           </p>
+        </div>
       </div>
 
       <TransactionModal

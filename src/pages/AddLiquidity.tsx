@@ -86,37 +86,91 @@ const AddLiquidity = () => {
   ];
 
   return (
-    <div className="container max-w-md mx-auto py-16">
-      <BackButton />
-      <h1 className="text-2xl font-bold uppercase tracking-tight mb-8">Add Liquidity</h1>
-      <div className="border border-border bg-card p-6 space-y-4">
-        {tokenFields.map(({ token, value, onChange }) => {
-          const bal = balances[token];
-          return (
-            <div key={token} className="p-4 bg-muted/20 border border-border">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground tracking-wider uppercase">{token}</span>
-                <button onClick={() => onChange(bal.balance ? bal.balance.formatted : "")} className="text-xs text-primary hover:underline font-mono">Max: {bal.isLoading ? "..." : bal.formatted}</button>
-              </div>
-              <input type="number" placeholder="0.00" value={value} onChange={(e) => onChange(e.target.value)} disabled={!isConnected} className="w-full bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted-foreground/30 font-mono disabled:opacity-50" />
-            </div>
-          );
-        })}
-        <div className="p-4 border border-border space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">LP Tokens Out</span><span className="text-foreground font-mono">{liq.lpPreview.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground text-xs uppercase tracking-wider">Pool Share</span><span className="text-foreground font-mono">{sharePreview}%</span></div>
-        </div>
-        <Button className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold tracking-wider uppercase" onClick={handleClick} disabled={liq.isBusy || !hasAmount || hasInsufficientBalance}>
-          {liq.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}{getButtonText()}
-        </Button>
+    <div className="container max-w-lg mx-auto py-16 px-4">
+      <div className="mb-8">
+        <BackButton />
+        <h1 className="text-3xl font-bold tracking-tight mt-6 uppercase">Provision Liquidity</h1>
+        <p className="text-muted-foreground text-sm font-mono mt-1">Acquire StableSwap LP units by providing asset pairs</p>
       </div>
-      <TransactionModal stage={txStage}
-        approveLabel={liq.usdcApprovePending || liq.usdcApproveConfirming ? `Approve ${usdcAmount} USDC` : `Approve ${eurcAmount} EURC`}
-        actionLabel={`Add ${usdcAmount || "0"} USDC + ${eurcAmount || "0"} EURC`}
-        successSummary={`Added liquidity → ${liq.lpPreview.toFixed(4)} LP tokens`}
+
+      <div className="border border-border bg-card rounded-sm shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-border bg-muted/20">
+           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Standardized Deposit</p>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {tokenFields.map(({ token, value, onChange }) => {
+            const bal = balances[token];
+            return (
+              <div key={token} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{token} Input</span>
+                  <button 
+                    onClick={() => onChange(bal.balance ? bal.balance.formatted : "")} 
+                    className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline"
+                  >
+                    Use Max: {bal.isLoading ? "..." : bal.formatted}
+                  </button>
+                </div>
+                <div className="flex items-center gap-4 bg-muted/20 p-4 border border-border rounded-sm group hover:border-primary/30 transition-colors">
+                  <input 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={value} 
+                    onChange={(e) => onChange(e.target.value)} 
+                    disabled={!isConnected} 
+                    className="flex-1 bg-transparent text-3xl font-bold text-foreground outline-none placeholder:text-muted-foreground/20 font-mono disabled:opacity-50 min-w-0" 
+                  />
+                  <div className="flex items-center gap-2 bg-background px-3 py-1.5 border border-border rounded-sm">
+                     <div className={`h-4 w-4 rounded-full ${token === "USDC" ? "bg-primary" : "bg-secondary"}`} />
+                     <span className="text-xs font-bold font-mono">{token}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="p-6 bg-muted/10 border border-border rounded-sm grid grid-cols-2 gap-8 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Loader2 className="h-12 w-12" />
+             </div>
+             <div>
+                <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-1">LP Units Out</p>
+                <p className="text-xl font-bold font-mono">{liq.lpPreview.toFixed(4)}</p>
+             </div>
+             <div>
+                <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-1">Pool Share</p>
+                <p className="text-xl font-bold font-mono">{sharePreview}%</p>
+             </div>
+          </div>
+
+          <Button 
+            className="w-full h-14 bg-primary text-primary-foreground font-bold tracking-[0.2em] uppercase text-sm shadow-sm active:scale-[0.98] transition-all" 
+            onClick={handleClick} 
+            disabled={liq.isBusy || !hasAmount || hasInsufficientBalance}
+          >
+            {liq.isBusy && <Loader2 className="h-4 w-4 animate-spin mr-3" />}
+            {getButtonText()}
+          </Button>
+        </div>
+        
+        <div className="p-4 bg-primary/5 border-t border-border">
+           <p className="text-[9px] text-center text-primary font-bold uppercase tracking-[0.25em]">
+              LP units automatically accrue swap fees within the protocol pool
+           </p>
+        </div>
+      </div>
+
+      <TransactionModal 
+        stage={txStage}
+        approveLabel={liq.usdcApprovePending || liq.usdcApproveConfirming ? `Authorize USDC` : `Authorize EURC`}
+        actionLabel={`Confirm Initial Provision`}
+        successSummary={`Successfully minted ${liq.lpPreview.toFixed(4)} LP units`}
         txHash={liq.actionTxHash || liq.usdcApproveTxHash || liq.eurcApproveTxHash}
         errorMessage={(liq.error || liq.usdcApproveError || liq.eurcApproveError)?.message}
-        onClose={handleModalClose} onRetry={() => liq.resetAll()} />
+        onClose={handleModalClose} 
+        onRetry={() => liq.resetAll()} 
+      />
     </div>
   );
 };
