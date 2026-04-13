@@ -152,6 +152,11 @@ export function BridgeProgress({
               Complete Mint
             </Button>
           )}
+          {status === "waiting_attestation" && onReset && (
+            <Button variant="outline" className="w-full text-xs text-muted-foreground" onClick={onReset}>
+              Close / Continue in Background
+            </Button>
+          )}
           {(status === "complete" || status === "failed") && onReset && (
             <Button className="w-full" onClick={onReset}>
               Done
