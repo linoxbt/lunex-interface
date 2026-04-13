@@ -226,8 +226,7 @@ const Bridge = () => {
         </TabsContent>
       </Tabs>
       </div>
-    </div>
-  );
+    );
 };
 
 export default Bridge;
