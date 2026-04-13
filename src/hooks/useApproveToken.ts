@@ -12,7 +12,7 @@ export function useApproveToken(
 ) {
   const { address } = useAccount();
 
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+  const { data: allowance, refetch: refetchAllowance, isFetching: isAllowanceLoading } = useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
     functionName: "allowance",
@@ -86,5 +86,6 @@ export function useApproveToken(
     approveError,
     refetchAllowance,
     resetApprove,
+    isAllowanceLoading,
   };
 }

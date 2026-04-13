@@ -50,6 +50,7 @@ const Swap = () => {
     approveError: swap.approveError, actionError: swap.swapError, isConfirmed: swap.isConfirmed,
     isActionPending: swap.isSwapPending, actionTxHash: swap.swapTxHash, isActionConfirming: swap.isSwapConfirming,
     isApprovePending: swap.isApprovePending, approveTxHash: swap.approveTxHash, isApproveConfirming: swap.isApproveConfirming,
+    isApproved: swap.isApproved, isAllowanceLoading: swap.isAllowanceLoading,
   });
 
   const handleModalClose = () => {

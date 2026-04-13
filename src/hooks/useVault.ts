@@ -50,6 +50,8 @@ export function useVaultDeposit(tokenSymbol: "USDC" | "EURC", amount: string) {
     isActionPending, actionTxHash: txHash, isActionConfirming,
     isApproving: approval.isApproving,
     isBusy: approval.isApproving || isActionPending || isActionConfirming,
+    isApproved: approval.isApproved,
+    isAllowanceLoading: approval.isAllowanceLoading,
   };
 }
 

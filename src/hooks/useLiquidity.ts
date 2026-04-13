@@ -62,6 +62,8 @@ export function useAddLiquidity(usdcAmount: string, eurcAmount: string) {
     isActionPending, actionTxHash: txHash, isActionConfirming,
     isApproving: usdcApproval.isApproving || eurcApproval.isApproving,
     isBusy: usdcApproval.isApproving || eurcApproval.isApproving || isActionPending || isActionConfirming,
+    isApproved: usdcApproval.isApproved || eurcApproval.isApproved,
+    isAllowanceLoading: usdcApproval.isAllowanceLoading || eurcApproval.isAllowanceLoading,
   };
 }
 
@@ -138,5 +140,7 @@ export function useRemoveLiquidity(lpAmountRaw: bigint, lpAmountDisplay: string,
     isActionConfirming,
     isApproving: lpApproval.isApproving,
     isBusy: lpApproval.isApproving || isActionPending || isActionConfirming,
+    isApproved: lpApproval.isApproved,
+    isAllowanceLoading: lpApproval.isAllowanceLoading,
   };
 }

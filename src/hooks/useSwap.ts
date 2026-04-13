@@ -90,5 +90,7 @@ export function useSwap({ fromSymbol, toSymbol, amount, slippage }: UseSwapParam
     isConfirmed, swapError,
     needsApproval: approval.needsApproval(amount),
     outputAmount, spotRate, priceImpact, resetAll,
+    isApproved: approval.isApproved,
+    isAllowanceLoading: approval.isAllowanceLoading,
   };
 }

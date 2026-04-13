@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "wagmi";
 import { usePoolData } from "@/hooks/usePoolData";
@@ -7,6 +6,7 @@ import { SectionHistory } from "@/components/SectionHistory";
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import EmptyState from "@/components/EmptyState";
 import BackButton from "@/components/BackButton";
+import { Link } from "react-router-dom";
 
 const POOL_COLUMNS = [
   { key: "action", label: "Action" },

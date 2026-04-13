@@ -2,7 +2,7 @@ import { Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EXPLORER_URL } from "@/config/wagmi";
 
-type Stage = "approve-wallet" | "approve-pending" | "action-wallet" | "action-pending" | "success" | "error" | null;
+type Stage = "approve-wallet" | "approve-pending" | "verifying" | "action-wallet" | "action-pending" | "success" | "error" | null;
 
 interface TransactionModalProps {
   stage: Stage;
@@ -25,9 +25,12 @@ export function computeTxStage(s: {
   isApprovePending?: boolean;
   approveTxHash?: string;
   isApproveConfirming?: boolean;
+  isApproved?: boolean;
+  isAllowanceLoading?: boolean;
 }): Stage {
   if (s.approveError || s.actionError) return "error";
   if (s.isConfirmed) return "success";
+  if (s.isApproved && s.isAllowanceLoading) return "verifying";
   if (s.actionTxHash && s.isActionConfirming) return "action-pending";
   if (s.isActionPending) return "action-wallet";
   if (s.approveTxHash && s.isApproveConfirming) return "approve-pending";
@@ -61,6 +64,13 @@ export function TransactionModal({ stage, approveLabel, actionLabel, successSumm
                 {txHash!.slice(0, 10)}...{txHash!.slice(-8)} <ExternalLink className="h-3 w-3" />
               </a>
             )}
+          </>
+        )}
+        {stage === "verifying" && (
+          <>
+            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Verifying Approval</h3>
+            <p className="text-sm text-muted-foreground mb-2">Transaction confirmed! Synchronizing on-chain state...</p>
           </>
         )}
         {stage === "action-wallet" && (

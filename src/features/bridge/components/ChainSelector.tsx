@@ -10,12 +10,12 @@ import {
 import { BRIDGE_CHAINS, BRIDGE_CHAIN_KEYS, type BridgeChainKey } from "../config/bridgeConfig";
 
 const chainIcons: Record<string, string> = {
-  ethereum: "🔷",
-  avalanche: "🔺",
-  arbitrum: "🔵",
-  base: "🔵",
-  polygon: "🟣",
-  arc: "✨"
+  ethereum: "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=024",
+  avalanche: "https://cryptologos.cc/logos/avalanche-avax-logo.svg?v=024",
+  arbitrum: "https://cryptologos.cc/logos/arbitrum-arb-logo.svg?v=024",
+  base: "https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/base-logo-symbol-color.svg",
+  polygon: "https://cryptologos.cc/logos/polygon-matic-logo.svg?v=024",
+  arc: "https://lunex.finance/logo.png" // Using protocol logo for Arc Network
 };
 
 interface ChainSelectorProps {
@@ -47,13 +47,16 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <SelectValue />
+            <div className="flex items-center gap-2">
+              <img src={chainIcons[fromChain]} alt={fromChain} className="h-4 w-4 rounded-full object-contain" />
+              <SelectValue />
+            </div>
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== toChain).map((k) => (
               <SelectItem key={k} value={k}>
                 <span className="flex items-center gap-2">
-                  <span>{chainIcons[k]}</span>
+                  <img src={chainIcons[k]} alt={k} className="h-4 w-4 rounded-full object-contain" />
                   <span>{BRIDGE_CHAINS[k].label}</span>
                 </span>
               </SelectItem>
@@ -82,13 +85,16 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <SelectValue />
+            <div className="flex items-center gap-2">
+              <img src={chainIcons[toChain]} alt={toChain} className="h-4 w-4 rounded-full object-contain" />
+              <SelectValue />
+            </div>
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== fromChain).map((k) => (
               <SelectItem key={k} value={k}>
                 <span className="flex items-center gap-2">
-                  <span>{chainIcons[k]}</span>
+                  <img src={chainIcons[k]} alt={k} className="h-4 w-4 rounded-full object-contain" />
                   <span>{BRIDGE_CHAINS[k].label}</span>
                 </span>
               </SelectItem>

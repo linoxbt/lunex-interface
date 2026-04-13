@@ -11,6 +11,8 @@ import { TransactionModal, computeTxStage } from "@/components/TransactionModal"
 import { useSectionHistory } from "@/hooks/useSectionHistory";
 import BackButton from "@/components/BackButton";
 
+const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const RemoveLiquidity = () => {
   const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -58,6 +60,7 @@ const RemoveLiquidity = () => {
     isApprovePending: liq.isApprovePending,
     approveTxHash: liq.approveTxHash,
     isApproveConfirming: liq.isApproveConfirming,
+    isApproved: liq.isApproved, isAllowanceLoading: liq.isAllowanceLoading,
   });
 
   const handleModalClose = () => {

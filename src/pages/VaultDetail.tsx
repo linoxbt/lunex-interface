@@ -100,6 +100,8 @@ const VaultDetail = () => {
     isApprovePending: active.isApprovePending,
     approveTxHash: active.approveTxHash as string | undefined,
     isApproveConfirming: active.isApproveConfirming,
+    isApproved: active.isApproved,
+    isAllowanceLoading: active.isAllowanceLoading,
   });
 
   const handleModalClose = () => {

@@ -43,6 +43,7 @@ const AddLiquidity = () => {
     isApprovePending: liq.usdcApprovePending || liq.eurcApprovePending,
     approveTxHash: liq.usdcApproveTxHash || liq.eurcApproveTxHash,
     isApproveConfirming: liq.usdcApproveConfirming || liq.eurcApproveConfirming,
+    isApproved: liq.isApproved, isAllowanceLoading: liq.isAllowanceLoading,
   });
 
   const handleModalClose = () => {
