@@ -194,20 +194,18 @@ const Bridge = () => {
           </div>
 
           {isActive && bridge.bridgeTx && (
-            <div className="mt-8">
-              <BridgeProgress
-                status={bridge.status}
-                burnTxHash={bridge.bridgeTx.burnTxHash}
-                mintTxHash={bridge.bridgeTx.mintTxHash}
-                fromChain={bridge.bridgeTx.fromChain}
-                toChain={bridge.bridgeTx.toChain}
-                error={bridge.error}
-                onRetry={() => bridge.startBridge(amount, fromChain, toChain)}
-                onReset={bridge.reset}
-                onMint={bridge.completeMint}
-                attestationReady={bridge.attestation.status === "complete"}
-              />
-            </div>
+            <BridgeProgress
+              status={bridge.status}
+              burnTxHash={bridge.bridgeTx.burnTxHash}
+              mintTxHash={bridge.bridgeTx.mintTxHash}
+              fromChain={bridge.bridgeTx.fromChain}
+              toChain={bridge.bridgeTx.toChain}
+              error={bridge.error}
+              onRetry={() => bridge.startBridge(amount, fromChain, toChain)}
+              onReset={bridge.reset}
+              onMint={bridge.completeMint}
+              attestationReady={bridge.attestation.status === "complete"}
+            />
           )}
         </TabsContent>
 

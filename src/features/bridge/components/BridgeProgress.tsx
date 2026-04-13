@@ -47,115 +47,117 @@ export function BridgeProgress({
   const currentStep = stepIndex(status);
 
   return (
-    <div className="border border-border bg-card p-6 space-y-6">
-      <h3 className="text-sm font-bold uppercase tracking-wider">Bridge Progress</h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      <div className="relative border border-border bg-card p-8 max-w-sm w-full space-y-6">
+        <h3 className="text-lg font-bold uppercase tracking-wider text-center border-b border-border/50 pb-4">Bridge Progress</h3>
 
-      <div className="space-y-4">
-        {STEPS.map((step, i) => {
-          const isActive = i === currentStep && status !== "complete" && status !== "failed";
-          const isDone = i < currentStep || status === "complete";
-          const isFailed = status === "failed" && i === currentStep;
+        <div className="space-y-4">
+          {STEPS.map((step, i) => {
+            const isActive = i === currentStep && status !== "complete" && status !== "failed";
+            const isDone = i < currentStep || status === "complete";
+            const isFailed = status === "failed" && i === currentStep;
 
-          return (
-            <div key={step.key} className="flex items-center gap-3">
-              <div
-                className={`h-8 w-8 flex items-center justify-center border text-xs font-bold ${
-                  isDone
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : isActive
-                    ? "border-primary text-primary animate-pulse"
-                    : isFailed
-                    ? "border-destructive text-destructive"
-                    : "border-border text-muted-foreground"
-                }`}
-              >
-                {isDone ? (
-                  <Check className="h-4 w-4" />
-                ) : isActive ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isFailed ? (
-                  <X className="h-4 w-4" />
-                ) : (
-                  i + 1
-                )}
-              </div>
-              <div className="flex-1">
-                <p
-                  className={`text-xs font-semibold tracking-wider ${
+            return (
+              <div key={step.key} className="flex items-center gap-3">
+                <div
+                  className={`h-8 w-8 flex items-center justify-center border text-xs font-bold shrink-0 ${
                     isDone
-                      ? "text-primary"
+                      ? "bg-primary text-primary-foreground border-primary"
                       : isActive
-                      ? "text-foreground"
+                      ? "border-primary text-primary animate-pulse"
                       : isFailed
-                      ? "text-destructive"
-                      : "text-muted-foreground"
+                      ? "border-destructive text-destructive"
+                      : "border-border text-muted-foreground"
                   }`}
                 >
-                  {step.label}
-                </p>
-                {step.key === "waiting_attestation" && isActive && (
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    This may take several minutes for Arc Network
+                  {isDone ? (
+                    <Check className="h-4 w-4" />
+                  ) : isActive ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isFailed ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    i + 1
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <p
+                    className={`text-xs font-semibold tracking-wider ${
+                      isDone
+                        ? "text-primary"
+                        : isActive
+                        ? "text-foreground"
+                        : isFailed
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {step.label}
                   </p>
-                )}
+                  {step.key === "waiting_attestation" && isActive && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      This may take several minutes to reach finality
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Transaction links */}
-      <div className="space-y-2 text-xs">
-        {burnTxHash && (
-          <a
-            href={getExplorerTxUrl(fromChain, burnTxHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-primary hover:underline"
-          >
-            Burn TX <ExternalLink className="h-3 w-3" />
-          </a>
-        )}
-        {mintTxHash && (
-          <a
-            href={getExplorerTxUrl(toChain, mintTxHash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-primary hover:underline"
-          >
-            Mint TX <ExternalLink className="h-3 w-3" />
-          </a>
-        )}
-      </div>
-
-      {/* Error state */}
-      {status === "failed" && error && (
-        <div className="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-          {error}
+            );
+          })}
         </div>
-      )}
 
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        {status === "failed" && onRetry && (
-          <Button size="sm" variant="outline" onClick={onRetry} className="text-xs gap-1">
-            <RotateCw className="h-3 w-3" /> Retry
-          </Button>
+        {/* Transaction links */}
+        <div className="space-y-2 text-xs flex flex-col items-center">
+          {burnTxHash && (
+            <a
+              href={getExplorerTxUrl(fromChain, burnTxHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1 text-primary hover:underline font-mono"
+            >
+              View Burn TX <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          {mintTxHash && (
+            <a
+              href={getExplorerTxUrl(toChain, mintTxHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1 text-primary hover:underline font-mono"
+            >
+              View Mint TX <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+
+        {/* Error state */}
+        {status === "failed" && error && (
+          <div className="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive text-center">
+            {error}
+          </div>
         )}
-        {status === "waiting_attestation" && attestationReady && onMint && (
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold uppercase tracking-wider"
-            onClick={onMint}
-          >
-            Complete Mint
-          </Button>
-        )}
-        {(status === "complete" || status === "failed") && onReset && (
-          <Button size="sm" variant="outline" onClick={onReset} className="text-xs">
-            New Bridge
-          </Button>
-        )}
+
+        {/* Action buttons */}
+        <div className="flex flex-col gap-2 pt-2">
+          {status === "failed" && onRetry && (
+            <Button variant="outline" onClick={onRetry} className="w-full gap-2">
+              <RotateCw className="h-4 w-4" /> Try Again
+            </Button>
+          )}
+          {status === "waiting_attestation" && attestationReady && onMint && (
+            <Button
+              className="bg-primary text-primary-foreground focus:ring-1 focus:ring-primary w-full uppercase tracking-widest font-bold"
+              onClick={onMint}
+            >
+              Complete Mint
+            </Button>
+          )}
+          {(status === "complete" || status === "failed") && onReset && (
+            <Button className="w-full" onClick={onReset}>
+              Done
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
