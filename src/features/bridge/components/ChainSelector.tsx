@@ -19,7 +19,7 @@ const chainIcons: Record<string, string> = {
   arbitrum: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#28A0F0"/><path d="M50 25L25 75h15l10-20 10 20h15L50 25z" fill="#fff"/></svg>`),
   base: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0052FF"/><circle cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="12"/></svg>`),
   polygon: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#8247E5"/><path d="M50 30L30 42v16l20 12 20-12V42L50 30z" fill="#fff"/></svg>`),
-  arc: lunexLogo
+  arc: "https://arc.network/favicon.ico"
 };
 
 interface ChainSelectorProps {
@@ -51,10 +51,7 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <div className="flex items-center gap-2">
-              <img src={chainIcons[fromChain]} alt={fromChain} className="h-4 w-4 rounded-full object-contain" />
-              <SelectValue />
-            </div>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== toChain).map((k) => (
@@ -89,10 +86,7 @@ export function ChainSelector({
           disabled={disabled}
         >
           <SelectTrigger className="bg-background border-border text-sm font-semibold h-10">
-            <div className="flex items-center gap-2">
-              <img src={chainIcons[toChain]} alt={toChain} className="h-4 w-4 rounded-full object-contain" />
-              <SelectValue />
-            </div>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {BRIDGE_CHAIN_KEYS.filter((k) => k !== fromChain).map((k) => (
@@ -104,6 +98,7 @@ export function ChainSelector({
               </SelectItem>
             ))}
           </SelectContent>
+
         </Select>
       </div>
     </div>
