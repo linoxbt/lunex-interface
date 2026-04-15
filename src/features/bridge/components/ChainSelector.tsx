@@ -19,7 +19,7 @@ const chainIcons: Record<string, string> = {
   arbitrum: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#28A0F0"/><path d="M50 25L25 75h15l10-20 10 20h15L50 25z" fill="#fff"/></svg>`),
   base: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0052FF"/><circle cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="12"/></svg>`),
   polygon: SVGO(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#8247E5"/><path d="M50 30L30 42v16l20 12 20-12V42L50 30z" fill="#fff"/></svg>`),
-  arc: "https://arc.network/favicon.ico"
+  arc: "https://www.arc.network/favicon.ico"
 };
 
 interface ChainSelectorProps {
@@ -98,7 +98,6 @@ export function ChainSelector({
               </SelectItem>
             ))}
           </SelectContent>
-
         </Select>
       </div>
     </div>
