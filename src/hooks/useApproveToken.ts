@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, maxUint256 } from "viem";
 import { erc20Abi } from "@/config/abis";
@@ -11,6 +11,7 @@ export function useApproveToken(
   decimals: number
 ) {
   const { address } = useAccount();
+  const [hasApprovedThisSession, setHasApprovedThisSession] = useState(false);
 
   const { data: allowance, refetch: refetchAllowance, isFetching: isAllowanceLoading } = useReadContract({
     address: tokenAddress,
@@ -36,7 +37,10 @@ export function useApproveToken(
   const isApproving = isApprovePending || isApproveConfirming;
 
   useEffect(() => {
-    if (isApproved) refetchAllowance();
+    if (isApproved) {
+      setHasApprovedThisSession(true);
+      refetchAllowance();
+    }
   }, [isApproved, refetchAllowance]);
 
   useEffect(() => {
@@ -47,6 +51,7 @@ export function useApproveToken(
 
   const needsApproval = useCallback(
     (amount: string) => {
+      if (hasApprovedThisSession) return false;
       if (!allowance || !amount) return true;
       try {
         const parsedAmount = parseUnits(amount, decimals);
@@ -55,7 +60,7 @@ export function useApproveToken(
         return true;
       }
     },
-    [allowance, decimals]
+    [allowance, decimals, hasApprovedThisSession]
   );
 
   const requestApproval = useCallback(

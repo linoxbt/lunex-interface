@@ -2,7 +2,7 @@ import { Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EXPLORER_URL } from "@/config/wagmi";
 
-type Stage = "approve-wallet" | "approve-pending" | "verifying" | "action-wallet" | "action-pending" | "success" | "error" | null;
+type Stage = "approve-wallet" | "approve-pending" | "verifying" | "approve-success" | "action-wallet" | "action-pending" | "success" | "error" | null;
 
 interface TransactionModalProps {
   stage: Stage;
@@ -31,6 +31,7 @@ export function computeTxStage(s: {
   if (s.approveError || s.actionError) return "error";
   if (s.isConfirmed) return "success";
   if (s.isApproved && s.isAllowanceLoading) return "verifying";
+  if (s.isApproved && !s.isActionPending && !s.actionTxHash && s.approveTxHash) return "approve-success";
   if (s.actionTxHash && s.isActionConfirming) return "action-pending";
   if (s.isActionPending) return "action-wallet";
   if (s.approveTxHash && s.isApproveConfirming) return "approve-pending";
@@ -71,6 +72,19 @@ export function TransactionModal({ stage, approveLabel, actionLabel, successSumm
             <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
             <h3 className="text-lg font-bold mb-2">Verifying Approval</h3>
             <p className="text-sm text-muted-foreground mb-2">Transaction confirmed! Synchronizing on-chain state...</p>
+          </>
+        )}
+        {stage === "approve-success" && (
+          <>
+            <CheckCircle2 className="h-12 w-12 text-green mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Approval Confirmed</h3>
+            <p className="text-sm text-muted-foreground mb-3">You can now proceed with the transaction.</p>
+            {link && (
+              <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-mono mb-4 block">
+                View on ArcScan <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+            <Button onClick={onClose} className="w-full mt-3 bg-primary text-primary-foreground">Continue</Button>
           </>
         )}
         {stage === "action-wallet" && (
